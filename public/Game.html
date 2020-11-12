@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>A Silk Road | Exploring Trade and Behavioural Economics</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link href="https://fonts.googleapis.com/css2?family=Istok+Web&family=Sulphur+Point&family=Trirong&display=swap"
+		rel="stylesheet">
+	<script src="/public/js/lib/jquery-3.5.1.min.js"></script>
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<script src="/public/js/lib/jquery.ui-contextmenu.min.js"></script>
+	<script src="https://cdn.socket.io/socket.io-2.3.0.js"></script>
+	<script src="/public/js/lib/three/build/three.js"></script>
+	<script src="/public/js/lib/three/examples/js/loaders/GLTFLoader.js"></script>
+	<script src="/public/js/lib/three/examples/js/loaders/RGBELoader.js"></script>
+	<script src="/public/js/lib/three/examples/js/controls/OrbitControls.js"></script>
+	<script src="/public/js/lib/hashes.min.js"></script>
+	<script src="/public/js/client.js"></script>
+	<link rel="icon" href="/public/images/SVG/cart_logo.svg" type="image/svg+xml" sizes="16x16">
+	<link rel="stylesheet" href="/public/css/main.css">
+</head>
+
+<body>
+	<div class="public-intro">
+		<h1>A Silk Road</h1><img id="cart_logo" src="/public/images/SVG/cart_logo.svg" alt="cart with leaf">
+		<p>A networked behavioural economics & mathematical psychology exploration.</p>
+		<div class="top-nav">Explore | Brokerage | Community | Account </div>
+	</div>
+	<div class="public-global-container">
+		<div class="public-explorable-container">
+			<!--Text View -->
+			<main class="explorable-text-view">
+				<h1>Explorable Text View</h1><br>
+				<p>You see a forest ahead. There is a tree, an ore cropping, and a pond. Little squirrels dance happily
+					around it.</p>
+				<h4 class="explorable-text-view--update"></h4>
+			</main>
+
+			<!-- Game World canvas used by Three.js -->
+			<div class="explorable-graphics-view">
+				<canvas id="graphics-view--canvas" width="1200px" height=500px></canvas>
+			</div>
+
+			<!-- Brokerage View -->
+			<aside class="brokerage-view-container">
+				<div id="brokerage-view__content">
+					<div class="brokerage-view__content--tabs">
+						<div class="brokerage-view__content--tabs--nav">
+							<div id="listed-items">Listed Items</div>
+						</div>
+					</div>
+				</div>
+				<div>
+					<h1>Inventory</h1>
+					<ul id="inventory"></ul>
+				</div>
+			</aside>
+
+			<!-- Chat View -->
+			<aside class="chat-view-container">
+				<h1 class="chat-view-header">Chat View:</h1>
+				<ul id="messages"></ul>
+			</aside>
+			<form id="chat-view-input" action="">
+				<input id="chat-view-inputfield" autocomplete="off" /><button>Send</button>
+			</form>
+		</div>
+	</div>
+	<div class="bottom-nav">Explore | Brokerage | Community | Account </div>
+	<footer class="footer">
+		<h4>A networked behavioural economics & mathematical psychology exploration. 2020-</h4>
+	</footer>
+	<!-- DOM Assets -->
+	<div id="contextMenu--select-container">
+		<div style="background-color: black;">
+			<small class="contextMenu--select-label" style="background-color: black; color: white;">Actions</small>
+		</div>
+		<div class="contextMenu--select-actions">
+			<div id="contextMenu--select-collect" class="hasmenu">Collect</div>
+			<div id="contextMenu--select-collectandbroker" class="hasmenu">Collect & Broker</div>
+			<div id="contextMenu--select-cancel">Cancel</div>	
+		</div>
+	</div>
+	<!-- Inventory context menu -->
+	<div id="inventory-contextMenu--select-container" title="Inventory Context Menu">
+		<!-- <div class="inventory-contextMenu--select-label" style="background-color: black;">
+			<small style="background-color: black; color: white;">Actions</small>
+		</div>
+		<div class="inventory-contextMenu--select-actions">
+			<div id="inventory-contextMenu--select-examine" class="hasmenu">Examine</div>
+			<div id="inventory-contextMenu--select-broker" class="hasmenu">Broker</div>
+			<div id="inventory-contextMenu--select-cancel">Cancel</div>	
+		</div> -->
+	</div>
+	<audio id="getWoodSoundFX">
+		<source src="/public/sounds/get_wood.mp3" type="audio/mpeg">
+	</audio>
+	<audio id="bensound-onceagain">
+		<source src="/public/sounds/bensound-onceagain.mp3" type="audio/mpeg">
+	</audio>
+</body>
+
+</html>

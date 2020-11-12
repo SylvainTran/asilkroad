@@ -1,0 +1,206 @@
+@import "animations.css";
+
+html, body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Trirong', serif;
+}
+#cart_logo {
+    width: 128px;
+    height: 128px;
+}
+
+.public-intro {
+    text-align: center;
+    margin-top: 20%;
+    margin-bottom: 20%;
+    font-size: 3em;
+}
+
+.public-intro > p {
+    font-size: 0.8em;
+}
+
+.top-nav, .bottom-nav {
+    text-align: center;
+}
+
+.bottom-nav {
+    font-size: 1.5em;
+}
+
+.public-explorable-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-area: 1/1/2/3;
+}
+
+.brokerage-view-container {
+    border: 2px solid black;
+    height: 500px;
+    grid-area: 1/2/3/3;
+    background-color:#7d7d7d;
+    color: white;
+    overflow: auto;
+}
+
+.brokerage-view__content {
+    display: flex;
+    justify-self: center;
+    justify-items: center;
+    align-items: center;
+    align-content: space-between;
+    flex-direction: row;
+}
+
+.brokerage-view__content--tabs div {
+    display: flex;
+    justify-self: center;
+    justify-items: center;
+    align-items: center;
+    align-content: space-between;
+    flex-direction: row;
+}
+
+.explorable-graphics-view {
+    position: relative;
+    border: 2px solid black;
+    height: 500px;
+    grid-area: 1/1/2/2;
+}
+
+#contextMenu--select-container {
+    position: fixed;
+    padding: 0; 
+    margin: 0;
+    background-color: grey;
+}
+
+#contextMenu--select-container > div {
+    color: white;
+    padding: 0; 
+    margin: 0;
+}
+
+.contextMenu--select-actions > div {
+    padding: 3px;
+    cursor: pointer;
+}
+
+.contextMenu--select-actions > div:hover {
+    background-color: indianred;
+} 
+
+.explorable-text-view {
+    border: 2px solid black;
+    height: 206px;
+    grid-area: 2/2/3/2;
+    background-color:#7d7d7d;
+    color: white;
+    overflow: auto;
+}
+
+.explorable-text-view > h4 {
+    color: greenyellow;
+}
+
+.explorable-text-view > p, .explorable-text-view > h1 {
+    margin: 0;
+    padding: 0;
+}
+
+.chat-view-container {
+    border: 2px solid rgb(226, 218, 218);
+    background-color:#9d9fa1;
+    height: 160px;
+    grid-area: 2/1/2/2;
+    overflow: auto;
+}
+
+.chat-view-container li {
+    color: white;
+    font-size: 1.5em;
+    font-weight: bolder;
+}
+
+.chat-view-header {
+    margin: 0;
+    padding: 0;
+    background-color:#7d7d7d;
+    color: white;
+}
+
+#chat-view-input {
+    position: relative;
+    top: -340px;
+    width: 1200px;
+}
+
+#chat-view-inputfield {
+    width: 1130px;
+}
+
+.public-global-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 5%;
+}
+
+.narrative-container {
+    text-align: center;
+    font-size: 1.5em;
+    margin: 10%;
+}
+
+.narrative, .narrative-interactive {
+    text-align: left;
+    padding: 50px;
+}
+
+.narrative > h1 {
+    background-color: pink;
+}
+
+.gather-button, .hunt-button {
+    margin: 10px;
+    background-color: green;
+    color: white;
+}
+
+form > input {
+    height: 40px;
+    width: 90.5%;
+    padding-left: 0.5%;
+    padding-right: 0.5%;
+    background-color: grey;
+    color: white;
+    font-size: 1.4em;
+}
+
+form button {
+    width: 54px;
+    height: 46px;
+    padding-top: 5px;
+    background: hsla(15%, 25%, 35%, 0.1);
+    font-weight: bold;
+}
+
+#messages {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+#messages li {
+    padding: 5px 10px;
+}
+
+.footer {
+    text-align: center;
+    font-size: 2em;
+    padding: 100px;
+    background-color: gray;
+    color: white;
+}
