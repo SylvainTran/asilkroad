@@ -18,22 +18,22 @@
 - Dear IMGUI / Javascript Bindings
 
 ## Major build versions
-V1: Server <-> Client route and static serve setup, basic public view layout, basic marketboard model, view and controller
+- V1: Server <-> Client route and static serve setup, basic public view layout, basic marketboard model, view and controller
 
-V2: 
+- V2: 
 
-V3: 
+- V3: 
 
 ## Objects & Methods of Interest
 
 ## References
-https://modernweb.com/building-multiplayer-games-with-node-js-and-socket-io/
+- https://modernweb.com/building-multiplayer-games-with-node-js-and-socket-io/
 
 ## Timeline
-Week 0: Pre-concept, ideation, brainstorm. 
-Week 1: Visual prototype, ideation deliverables
-Week 2: CRUD functionality
-Week 3: MVP prototype (V1) 
+- Week 0: Pre-concept, ideation, brainstorm. 
+- Week 1: Visual prototype, ideation deliverables
+- Week 2: CRUD functionality
+- Week 3: MVP prototype (V1) 
 
 ## UML
-https://app.diagrams.net/#G1vbnpUG34YPtL-Wb-o7aOkNVprksDMCF3
+- https://app.diagrams.net/#G1vbnpUG34YPtL-Wb-o7aOkNVprksDMCF3
