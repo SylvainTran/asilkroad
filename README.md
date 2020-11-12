@@ -30,10 +30,18 @@
 - https://modernweb.com/building-multiplayer-games-with-node-js-and-socket-io/
 
 ## Timeline
+- Project started on Oct. 12, 2020
 - Week 0: Pre-concept, ideation, brainstorm. 
 - Week 1: Visual prototype, ideation deliverables
-- Week 2: CRUD functionality
+- Week 2: CRUD functionality (Cancelled)
 - Week 3: MVP prototype (V1) 
+- Week 4: MVP prototype (V1) : Getting players' world positions synced, brokerage done, SRIs + Cycle System
+- Week 4.5: User feedback deadline
+- Week 5: Players Without Access Mechanics, Deeper mechanics with brokerage + item manufacturing
+- Week 6: Brokerage Archives/leaderboard, CRUD, Polish 3Cs (Camera, Control, Character), Polish sound, music and visual FXs
+- Week 7: Test client-side functionalities, test reliability server-side, heroku app upload tests, polish
+- Week 8: Polish, UI/UX
+- Week 9: Polish
 
 ## UML
 - https://viewer.diagrams.net/?highlight=0000ff&edit=_blank&layers=1&nav=1#G1kwJuY0oVIRCY-CAoj0uzEaifb_XXPqQt
