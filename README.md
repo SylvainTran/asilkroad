@@ -3,6 +3,9 @@
 # Build Status
 ## CORE:
 - Client server communication
+- Brokerage system
+- SRI events
+- Item manufacture + oil/light mechanic
 
 ## STRETCH GOALS:
 ## Change Log History
@@ -37,7 +40,7 @@
 - Week 3: MVP prototype (V1) 
 - Week 4: MVP prototype (V1) : Getting players' world positions synced, brokerage done, SRIs + Cycle System
 - Week 4.5: User feedback deadline
-- Week 5: Players Without Access Mechanics, Deeper mechanics with brokerage + item manufacturing
+- Week 5: Players Without Access Mechanics (oil/light mechanic), Deeper mechanics with brokerage + item manufacturing
 - Week 6: Brokerage Archives/leaderboard, CRUD, Polish 3Cs (Camera, Control, Character), Polish sound, music and visual FXs
 - Week 7: Test client-side functionalities, test reliability server-side, heroku app upload tests, polish
 - Week 8: Polish, UI/UX
