@@ -36,4 +36,4 @@
 - Week 3: MVP prototype (V1) 
 
 ## UML
-- https://app.diagrams.net/#G1vbnpUG34YPtL-Wb-o7aOkNVprksDMCF3
+- https://viewer.diagrams.net/?highlight=0000ff&edit=_blank&layers=1&nav=1#G1kwJuY0oVIRCY-CAoj0uzEaifb_XXPqQt
