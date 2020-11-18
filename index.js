@@ -795,24 +795,10 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
                     // And update the world, until end of Cycle Total Duration
                     // Generate a new SRI
                     // RESOURCES
-                    let tree = new THREE.GLTFLoader();
-                    tree.load(TREE_PATH, function (gltf) {
-                        treeModel = gltf.scene;
-                        treeModel.scale.set(1, 1, 1);
-                        // Todo read position from data file?
-                        treeModel.position.set(Math.floor(Math.random(0, 100)), 0, Math.floor(Math.random(0, 100)));
-                        treeModel.traverse(function(child) {
-                          if(child instanceof THREE.Mesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                          }
-                        });
-                        treeModel.castShadow = true;
-                    });
                     instantiatedResources.push(tree);
                     // emit this tree to the players so that they can load it
                     console.log("NEW CYCLE BEGIN: " + tickCount + "th cycle.");
-                    Server.GameEventsEmitter.emit("newCycleBegin", {message: "A New Special Resource Instance has spawned in the world.", resources: [tree] } );
+                    Server.GameEventsEmitter.emit("newCycleBegin", {message: "A New Special Resource Instance has spawned in the world.", resources: instantiatedResources } );
                     Server.onNewCycleBegin("Seasons pass.");
                     ++tickCount;
                 }, SERVER_CYCLE_TICK);
