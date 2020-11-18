@@ -34,11 +34,13 @@
   "dependencies": {
     "bufferutil": "^4.0.1",
     "chai": "^4.2.0",
+    "express": "^4.17.1",
     "esm": "^3.2.25",
     "jshashes": "^1.0.8",
     "node-static": "^0.7.11",
     "sinon": "^9.2.0",
     "socket.io": "^2.3.0",
+    "three": "^0.121.1",
     "ui-contextmenu": "^1.18.1",
     "utf-8-validate": "^5.0.2"
   },
