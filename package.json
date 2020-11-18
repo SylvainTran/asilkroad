@@ -31,6 +31,7 @@
     "utf-8-validate": "^5.0.2"
   },
   "dependencies": {
+    "axios": "^0.21.0",
     "bufferutil": "^4.0.1",
     "chai": "^4.2.0",
     "esm": "^3.2.25",
@@ -39,6 +40,8 @@
     "sinon": "^9.2.0",
     "socket.io": "^2.3.0",
     "ui-contextmenu": "^1.18.1",
-    "utf-8-validate": "^5.0.2"
+    "utf-8-validate": "^5.0.2",
+    "xhr2": "^0.2.0",
+    "xmlhttprequest": "^1.8.0"
   }
 }

@@ -2,9 +2,14 @@
 // AUTHOR: Sylvain Tran
 // DATE: v0.1-pre-alpha on 12-10-2020
 // GOAL: For the semester project in Cart 351
-// DESCRIPTION: This container is a modular, re-purposable server container for "seasonal/generational-timescale-activism" related explorations. Any content in-canvas can be modified for a new experience
-// The intent is to make this container server easy to embed in existing explorable sites, to explore ideas that require
-// multiple generations in parallel to large real life timescales
+// DESCRIPTION: A silkroad game
+
+// Libraries
+//
+// THREE.js
+global.THREE = require("three");
+require("../node_modules/three/examples/js/loaders/GLTFLoader");
+global.XMLHttpRequest = require('axios');
 
 // SERVER:
 //
@@ -538,6 +543,9 @@ let PRODUCE_TECHNIQUES = [{
 // map hash table for the base data
 let brokerage = new Map();
 brokerage = setupBrokerage();
+// RESOURCE CACHE (SRIs)
+let instantiatedResources = [];
+
 // setupBrokerage
 //
 // Fills an empty brokerage from raw data
@@ -550,31 +558,38 @@ function setupBrokerage() {
             'totalQty': 0, // 0 for now
             'sellerIds': [], // Empty for now
         });
-        console.log(brokerage.get(itemName));
+        // console.log(brokerage.get(itemName));
     }
     // Map to array
-    const _brokerage = Array.from(brokerage).reduce(function(obj, [key, value]){
-        obj[key] = value;
-        return obj;
-    }, {});
-    return JSON.stringify(_brokerage);
+    // const _brokerage = Array.from(brokerage).reduce(function(obj, [key, value]){
+    //     obj[key] = value;
+    //     return obj;
+    // }, {});
+    // console.log(brokerage);
+    return brokerage;
 }
 // sellItemToBrokerage
 // itemToSell: the object containing the mapped key of the item to sell along with the seller's data
 // For incoming sell requests
 function sellItemToBrokerage(itemToSellData) {
     // Check the itemToSell is in the brokerage database
-    if(!brokerage.has(itemToSellData.name)) return;
+    //console.log(brokerage);
+    //if(!brokerage.has(itemToSellData.info.item.name)) return;
 
     // Update currentItem
-    let currentItemToSellData = brokerage.get(itemToSellData.name);  // Target
-    // Update new seller
-    currentItemToSellData.sellerIds.append(itemToSellData.sellerData);
+    let currentItemToSellData = brokerage.get(itemToSellData.info.item.name);  // Target
+    // // Update new seller
+    currentItemToSellData.sellerIds.push(itemToSellData.metaData.sellerId);
     // Update new totalQty
-    currentItemToSellData.totalQty += itemToSellData.sellerData.qty;
+    let newQty = parseInt(currentItemToSellData.totalQty);
+    newQty += parseInt(itemToSellData.info.qty);
+    currentItemToSellData.totalQty = newQty;
+    // console.log("TOTAL QTY: " + currentItemToSellData.totalQty);
+    // console.log(currentItemToSellData);
+
     // Update value: Todo call another function
     // May have to use map.delete instead here
-    brokerage.set(itemToSellData.name, Object.assign(currentItemToSellData, updatedItemData));
+    // brokerage.set(itemToSellData.name, Object.assign(currentItemToSellData, updatedItemData));
     // Refresh view by broadcasting the updated brokerage is done in a separate event request from client
 
     // Template for sell item code
@@ -744,6 +759,9 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
     // Tick counter (will stop ticking stop the game once the Cycle Total Duration has been ticked)
     let tickCount = 0;
     let serverCycleTickInterval;
+    // RESOURCE PATHS FOR GENERATION
+    const TREE_PATH = '/public/models/tree_low_0001_export.glb';
+
     switch (cycleTick) {
         case "hourly":
             // Convert cycleGenerationDuration to real life hours
@@ -776,8 +794,26 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
                     }
                     // Checkpoint: Check all logged in sockets' data
                     // And update the world, until end of Cycle Total Duration
+                    // Generate a new SRI
+                    // RESOURCES
+                    let tree = new THREE.GLTFLoader();
+                    tree.load(TREE_PATH, function (gltf) {
+                        treeModel = gltf.scene;
+                        treeModel.scale.set(1, 1, 1);
+                        // Todo read position from data file?
+                        treeModel.position.set(Math.floor(Math.random(0, 100)), 0, Math.floor(Math.random(0, 100)));
+                        treeModel.traverse(function(child) {
+                          if(child instanceof THREE.Mesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                          }
+                        });
+                        treeModel.castShadow = true;
+                    });
+                    instantiatedResources.push(tree);
+                    // emit this tree to the players so that they can load it
                     console.log("NEW CYCLE BEGIN: " + tickCount + "th cycle.");
-                    Server.GameEventsEmitter.emit("newCycleBegin", "A New Special Resource Instance Spawned. Closing in 4:59.");
+                    Server.GameEventsEmitter.emit("newCycleBegin", {message: "A New Special Resource Instance has spawned in the world.", resources: [tree] } );
                     Server.onNewCycleBegin("Seasons pass.");
                     ++tickCount;
                 }, SERVER_CYCLE_TICK);
@@ -797,11 +833,12 @@ let numPlayersInRoom = 0;
 // Create new brokerage
 
 function getHostGameModel() {
+    let _brokerage = JSON.stringify(Array.from(brokerage));
     return {
         'gameId': newGameId,
         'rawResources': RAW_RESOURCES,
         'labourResources': LABOUR_RESOURCES,
-        'brokerage': brokerage
+        'brokerage': _brokerage
     }
 }
 
@@ -817,19 +854,25 @@ Server.bindHostEvents = function (socket) {
         ++Server.clientIdsCounter;
         // Cache that avatar on the host side
         console.log(data);
-        connectedAvatars.push(data);
+        connectedAvatars.push({socketId: this.id, data: data});
         // TODO need hard fast fail here... do not allow player to enter game if no game data
         // TODO make this only for the client who just joined
         // Update this newly joined player socket (only) with previously joined avatars
-        socket.emit('joinedClientId', { clientId: Server.clientIdsCounter, gameData: gameData, olderAvatars: connectedAvatars } );        
+        Server.GameEventsEmitter.to(socket.id).emit('joinedClientId', { clientId: Server.clientIdsCounter, gameData: gameData, olderAvatars: connectedAvatars } );        
         // IMPoRTANT; need to constantly keep connectedAvatars pdated with latest position
         // Broadcast to everyone but the sender that avatar
-        socket.broadcast.emit('newAvatarInWorld', JSON.stringify(data));
+        socket.broadcast.emit('newAvatarInWorld', {socketId: this.id, data: JSON.stringify(data)});
         console.log('a new user with id ' + Server.clientIdsCounter + " has entered with avatar: " + data + " and id: " + this.id);
         Server.clientIds.push({
             id: Server.clientIdsCounter,
             socketId: socket.id,
         });
+    });
+    socket.on('emitPlayerChangeWorldPosition', function(data) {
+        // console.log("Player with id " + data.myUniquePlayerId + " moved to new position: ");
+        // console.log(data.desiredPositionGoal);
+        // Broadcast this position to all other players
+        socket.broadcast.emit('emitToOtherPlayersChangedWorldPosition', data);
     });
     socket.on('fetchGameId', function (data) {
         console.log('user : ' + this.id + ' has requested the game id. Sending back Room id #: ' + gameData.gameId);
@@ -845,34 +888,59 @@ Server.bindHostEvents = function (socket) {
     socket.on('newCycleBegin', function (msg) {
         Server.GameEventsEmitter.emit("newCycleBegin", msg);
     });
-    // Disconnect event
-    socket.on('disconnectedPlayer', function(disconnectedPlayer) {
-        // search and remove the player avatar associated with the unique id of disconnectedPlayer
+    // Disconnected player
+    socket.on('disconnect', function () {
+        console.log('A user disconnected ' + socket.id);
+        //search and remove the player avatar associated with the unique id of disconnectedPlayer
+        let disconnectedUniqueUserId;
+        console.log(connectedAvatars);
         for(let i = 0; i < connectedAvatars.length; i++) {
-            if(connectedAvatars[i].uniquePlayerId === disconnectedPlayer) {
+            console.log(connectedAvatars[i].socketId);
+            if(connectedAvatars[i].socketId === socket.id) {
+                disconnectedUniqueUserId = connectedAvatars[i].data.uniquePlayerId;
+                console.log("deleting socketID " + connectedAvatars[i].socketId + " unique game ID: " + disconnectedUniqueUserId);
                 connectedAvatars.splice(i, 1);
             }
         }
         // Update all sockets with the updated Server.connectedAvatars
-        socket.emit('updatedConnectedAvatars', {disconnectedPlayerId: disconnectedPlayer, all: connectedAvatars});
+        socket.broadcast.emit('updatedConnectedAvatars', {disconnectedPlayerId: disconnectedUniqueUserId, updatedConnectedAvatars: connectedAvatars});
     });
-    socket.on('disconnect', function () {
-        console.log('A user disconnected');
-    });
-    socket.on('onBuyItem', function () {
-
+    socket.on('onBuyItem', function (itemToBuyData) {
+        console.log(itemToBuyData);
+        // Adjust item values in brokerage?
+        let oldTotalQty = brokerage.get(itemToBuyData.tradeInfo.info).totalQty;
+        console.log(oldTotalQty);
+        // TODO actually give the user the choice of how many pieces to buy, and group items by qty bundles
+        // let qtyToBuy = itemToBuyData.tradeInfo.item.qty;
+        // console.log(qtyToBuy);
+        let oldSellerIds = brokerage.get(itemToBuyData.tradeInfo.info).sellerIds;
+        let sellerIdToCompensate = itemToBuyData.tradeInfo.sellerId;
+        let index = oldSellerIds.indexOf(sellerIdToCompensate);
+        oldSellerIds.splice(index, 1);
+        brokerage.set(itemToBuyData.tradeInfo.info, {
+            'value': itemToBuyData.tradeInfo.item.value, // TODO dynamically re-adjust value based on scarcity, offer and supply
+            'totalQty': oldTotalQty - 1, // TODO see previous TODO
+            'sellerIds': oldSellerIds,
+        });
+        console.log(brokerage.get(itemToBuyData.tradeInfo.info));
+        // Take comission fee from seller (in buy function)
+        // Pay a guaranteed ticket if quality is good enough?
+        // Host appraises quality of good and changes rating of seller 
+        // Resend updated brokerage to everyone
+        let arrayMapBrokerage = JSON.stringify(Array.from(brokerage));
+        Server.GameEventsEmitter.emit('onRefreshBrokerage', arrayMapBrokerage);
     });
     socket.on('onSellItem', function (itemToSellData) {
         // First add to queue of items to sell on brokerage to prevent simultaneous conflicts
         // TODO 
         // Update brokerage in host side
+        // console.log(itemToSellData);
         sellItemToBrokerage(itemToSellData);
         // Emit to everyone the updated brokerage
-        Server.GameEventsEmitter.emit('onRefreshBrokerage', brokerage);
-        // Adjust item values in brokerage?
-        // Take comission fee from seller (in buy function)
-        // Pay a guaranteed ticket if quality is good enough?
-        // Host appraises quality of good and changes rating of seller 
+        // console.log(brokerage);
+        // Socket doesn't transit maps yet
+        let arrayMapBrokerage = JSON.stringify(Array.from(brokerage));
+        Server.GameEventsEmitter.emit('onRefreshBrokerage', arrayMapBrokerage);
         // Can sell information too?
     });
     socket.on('onBuildItem', function () {

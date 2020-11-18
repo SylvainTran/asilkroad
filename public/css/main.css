@@ -5,6 +5,8 @@ html, body {
     padding: 0;
     box-sizing: border-box;
     font-family: 'Trirong', serif;
+    background-color: rgb(1, 7, 42);
+    color: white;
 }
 #cart_logo {
     width: 128px;
@@ -41,27 +43,32 @@ html, body {
     border: 2px solid black;
     height: 500px;
     grid-area: 1/2/3/3;
-    background-color:#7d7d7d;
+    background-color:#3c3a46;
     color: white;
     overflow: auto;
+    display: grid;
 }
 
-.brokerage-view__content {
-    display: flex;
-    justify-self: center;
-    justify-items: center;
-    align-items: center;
-    align-content: space-between;
-    flex-direction: row;
+#brokerage-view__content {
+    display: grid;
+    grid-row: 1;
+    grid-column: 2;
+    border: 1px solid white;
 }
 
 .brokerage-view__content--tabs div {
-    display: flex;
-    justify-self: center;
-    justify-items: center;
-    align-items: center;
-    align-content: space-between;
-    flex-direction: row;
+
+}
+
+hr.thick {
+    border-top: 3px solid black;
+}
+
+#brokerage-view__inventory {
+    display: grid;
+    grid-row: 1;
+    grid-column: 1;
+    border: 1px solid white;
 }
 
 .explorable-graphics-view {
@@ -69,6 +76,11 @@ html, body {
     border: 2px solid black;
     height: 500px;
     grid-area: 1/1/2/2;
+}
+
+#graphics-view--canvas {
+    width: 1200px;
+    height: 500px;
 }
 
 #contextMenu--select-container {
@@ -84,21 +96,50 @@ html, body {
     margin: 0;
 }
 
+#inventory-contextMenu--select-container, .ui-dialog-buttonpane {
+    background-color: #3c3a46;
+    color: white;
+}
+
+#inventory-contextMenu--select-container li {
+    background-color: #3c3a46;
+    color: white;
+    cursor: pointer;
+}
+
+#inventory-contextMenu--select-container li:hover {
+    background-color: indianred;
+}
+
 .contextMenu--select-actions > div {
     padding: 3px;
     cursor: pointer;
 }
 
-.contextMenu--select-actions > div:hover {
+.contextMenu--select-actions > div:hover, #brokerage-list li:hover, #inventory li:hover {
     background-color: indianred;
-} 
+    color: white;
+    cursor: pointer;
+}
+
+.brokerage--empty-listing {
+    background-color: #3c3a46;
+    color: #2c2b2c;
+    cursor: default;
+}
+
+.brokerage--with-listing {
+    background-color: #3c3a46;
+    color: yellow;
+    cursor: pointer;
+}
 
 .explorable-text-view {
     border: 2px solid black;
     height: 206px;
     grid-area: 2/2/3/2;
-    background-color:#7d7d7d;
-    color: white;
+    background-color:#3c3a46;
+    color: rgb(255, 255, 255);
     overflow: auto;
 }
 
@@ -113,7 +154,7 @@ html, body {
 
 .chat-view-container {
     border: 2px solid rgb(226, 218, 218);
-    background-color:#9d9fa1;
+    background-color:#3c3a46;
     height: 160px;
     grid-area: 2/1/2/2;
     overflow: auto;

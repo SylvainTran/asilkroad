@@ -25,16 +25,18 @@
 <body>
 	<div class="public-intro">
 		<h1>A Silk Road</h1><img id="cart_logo" src="/public/images/SVG/cart_logo.svg" alt="cart with leaf">
-		<p>A networked behavioural economics & mathematical psychology exploration.</p>
-		<div class="top-nav">Explore | Brokerage | Community | Account </div>
+		<p>Journey into Canis Major Dwarf. Trade Resources. Manufacture Stuff. Stay Lit.</p>
+		<div class="top-nav">Intention | Game Generated Art Brokerage | Community | Account </div>
 	</div>
 	<div class="public-global-container">
 		<div class="public-explorable-container">
 			<!--Text View -->
 			<main class="explorable-text-view">
-				<h1>Explorable Text View</h1><br>
-				<p>You see a forest ahead. There is a tree, an ore cropping, and a pond. Little squirrels dance happily
-					around it.</p>
+				<h1>Story So Far</h1><br>
+				<p>The world is dark and almost silent. Your cart's wheels startle a flock of birds away. Heck, your own shadow startles you. A pair of little squirrels stare. They vanish in the forest, as if they had just remembered something important to do.</p><br>
+				<p>This was not the agreed upon plan. The <strong>Space Colonization Bureau</strong> had reassured you that this exoplanet was the closest candidate to Earth's condition in <strong>Canis Major Dwarf</strong>, but nothing around you seems familiar. Unfortunately, you lost sight of the rest of the crew after landing. You check your radio: its <strong>aluminium and steel material</strong> is badly damaged from the landing. You also check the most vital asset in your equipment: your <strong><span style="color: orange;">Exploration Lantern of Light</span></strong>. 
+					Miraculously, it has been undamaged from the landing. Without it, you cannot continue on, you recall from your Space Colonization Training. <strong>Dangerous exo-lifeforms known from previous explorers</strong> have been known to prey on those without their <strong><span style="color: orange;">Light</span></strong>. Keep your Exploration Lantern of Light filled with any <strong><span style="color: green;">consummable resource</span></strong> you can find.<br><br>Time is critical: <strong><span style="color: blue;">find a way to repair your radio comms.</span></strong></p>
+					<p>Pre-Alpha Developer's Notice: You can't finish this first mission yet. I need to finish my courses at school first, become a legend, AND make my mom proud. (BlahblahIWouldAppreciateMoneyBlah.) Love You Greatly)</p>
 				<h4 class="explorable-text-view--update"></h4>
 			</main>
 
@@ -43,24 +45,29 @@
 				<canvas id="graphics-view--canvas" width="1200px" height=500px></canvas>
 			</div>
 
+			<!-- Logistics View -->
+			<div class="brokerage-view-container">
 			<!-- Brokerage View -->
-			<aside class="brokerage-view-container">
 				<div id="brokerage-view__content">
 					<div class="brokerage-view__content--tabs">
 						<div class="brokerage-view__content--tabs--nav">
-							<div id="listed-items">Listed Items</div>
+							<div id="listed-items">Listed Items</div><hr>
 						</div>
 					</div>
+					<ul id="brokerage-list"></ul>
 				</div>
-				<div>
-					<h1>Inventory</h1>
-					<ul id="inventory"></ul>
+				<!-- Inventory View -->
+				<div id="brokerage-view__inventory">
+					<div>
+						Inventory<hr>
+						<ul id="inventory"></ul>
+					</div>
 				</div>
-			</aside>
+			</div>
 
 			<!-- Chat View -->
 			<aside class="chat-view-container">
-				<h1 class="chat-view-header">Chat View:</h1>
+				<h1 class="chat-view-header">Announcements:</h1>
 				<ul id="messages"></ul>
 			</aside>
 			<form id="chat-view-input" action="">
@@ -68,9 +75,10 @@
 			</form>
 		</div>
 	</div>
-	<div class="bottom-nav">Explore | Brokerage | Community | Account </div>
+	<div class="bottom-nav">Intention | Game Generated Art Brokerage  | Community | Account </div>
 	<footer class="footer">
-		<h4>A networked behavioural economics & mathematical psychology exploration. 2020-</h4>
+		<h7>A networking project by some guy. Watch the unlikely-to-finish development at: <small>https://github.com/peelingSun/asilkroad/wiki.</small></h7>
+		<small>Black, White, Yellow, Red, Purple Lives all Matter to God</small>
 	</footer>
 	<!-- DOM Assets -->
 	<div id="contextMenu--select-container">
@@ -78,27 +86,31 @@
 			<small class="contextMenu--select-label" style="background-color: black; color: white;">Actions</small>
 		</div>
 		<div class="contextMenu--select-actions">
-			<div id="contextMenu--select-collect" class="hasmenu">Collect</div>
-			<div id="contextMenu--select-collectandbroker" class="hasmenu">Collect & Broker</div>
-			<div id="contextMenu--select-cancel">Cancel</div>	
+			<div id="contextMenu--select-collect" class="hasmenu">Collect (Warning: As everything in life, nature takes time to heal.)</div>
+			<div id="contextMenu--select-cancel">Leave Alone</div>	
 		</div>
 	</div>
 	<!-- Inventory context menu -->
-	<div id="inventory-contextMenu--select-container" title="Inventory Context Menu">
-		<!-- <div class="inventory-contextMenu--select-label" style="background-color: black;">
-			<small style="background-color: black; color: white;">Actions</small>
-		</div>
-		<div class="inventory-contextMenu--select-actions">
-			<div id="inventory-contextMenu--select-examine" class="hasmenu">Examine</div>
-			<div id="inventory-contextMenu--select-broker" class="hasmenu">Broker</div>
-			<div id="inventory-contextMenu--select-cancel">Cancel</div>	
-		</div> -->
-	</div>
+	<div id="inventory-contextMenu--select-container" title="Inventory Context Menu"></div>
+	<!-- Confirm buy from seller dialog -->
+	<div id="inventory-contextMenu--buy-container" title="Confirm Purchase?"></div>
+	<audio id="playerMove">
+		<source src="/public/sounds/playerMove.mp3" type="audio/mpeg">
+	</audio>
+	<audio id="otherPlayerMove">
+		<source src="/public/sounds/otherPlayerMove.mp3" type="audio/mpeg">
+	</audio>
+	<audio id="tradeToBrokerage">
+		<source src="/public/sounds/tradeToBrokerage.mp3" type="audio/mpeg">
+	</audio>
 	<audio id="getWoodSoundFX">
 		<source src="/public/sounds/get_wood.mp3" type="audio/mpeg">
 	</audio>
 	<audio id="bensound-onceagain">
 		<source src="/public/sounds/bensound-onceagain.mp3" type="audio/mpeg">
+	</audio>
+	<audio id="song18">
+		<source src="/public/sounds/song18.mp3" type="audio/mpeg">
 	</audio>
 </body>
 
