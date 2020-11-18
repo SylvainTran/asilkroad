@@ -795,7 +795,8 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
                     // And update the world, until end of Cycle Total Duration
                     // Generate a new SRI
                     // RESOURCES
-                    instantiatedResources.push(tree);
+                    let newResourceUUID = THREE.MathUtils.generateUUID();
+                    instantiatedResources.push(newResourceUUID);
                     // emit this tree to the players so that they can load it
                     console.log("NEW CYCLE BEGIN: " + tickCount + "th cycle.");
                     Server.GameEventsEmitter.emit("newCycleBegin", {message: "A New Special Resource Instance has spawned in the world.", resources: instantiatedResources } );
