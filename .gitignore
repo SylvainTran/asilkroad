@@ -1,6 +1,4 @@
 /node_modules
-/public/js/lib/three
-/public/models/
 npm-debug.log
 .DS_Store
 /*.env
