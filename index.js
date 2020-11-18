@@ -8,7 +8,7 @@
 //
 // THREE.js
 global.THREE = require("three");
-require("../node_modules/three/examples/js/loaders/GLTFLoader");
+require("three/examples/js/loaders/GLTFLoader");
 global.XMLHttpRequest = require('axios');
 
 // SERVER:

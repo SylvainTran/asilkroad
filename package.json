@@ -4,6 +4,7 @@
   "description": "sockets.io iand three.js learning with a small-scale online explorable space centred on a brokerage and trading system.",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "mocha --reporter list"
   },
   "repository": {
@@ -31,7 +32,6 @@
     "utf-8-validate": "^5.0.2"
   },
   "dependencies": {
-    "axios": "^0.21.0",
     "bufferutil": "^4.0.1",
     "chai": "^4.2.0",
     "esm": "^3.2.25",
@@ -40,8 +40,6 @@
     "sinon": "^9.2.0",
     "socket.io": "^2.3.0",
     "ui-contextmenu": "^1.18.1",
-    "utf-8-validate": "^5.0.2",
-    "xhr2": "^0.2.0",
-    "xmlhttprequest": "^1.8.0"
+    "utf-8-validate": "^5.0.2"
   }
 }
