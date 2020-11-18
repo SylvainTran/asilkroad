@@ -17,7 +17,10 @@ var Server = Server = Server || {};
 Server.express = require('express');
 Server.path = require('path');
 Server.WorldServer = Server.express();
-Server.WorldServer.use('/public', Server.express.static(Server.path.join(__dirname, "../public")));
+// Local host version
+// let joinedAbsPath = Server.express.static(Server.path.join(__dirname, "/public");
+// Server.WorldServer.use('/public', joinedAbsPath);
+Server.WorldServer.use(Server.express.static('public'));
 Server.http = require('http').createServer(Server.WorldServer);
 // Emitter for CycleEvents
 Server.GameEventsEmitter = require('socket.io').listen(Server.http);
