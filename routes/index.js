@@ -951,7 +951,11 @@ Server.bindHostEvents = function (socket) {
 // PORT LISTENERS:
 //
 // MAIN GAME PORT
-Server.http.listen(3000, () => {
+let port = process.env.PORT; // heroku
+if(port == null || port == "") {
+    port = 3000;    
+}
+Server.http.listen(port, () => {
     console.log('listening on *:3000');
 });
 

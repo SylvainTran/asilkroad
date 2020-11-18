@@ -1,0 +1,1 @@
+web: /routes/node index.js
