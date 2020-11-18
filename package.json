@@ -2,9 +2,9 @@
   "name": "A_Silk_Road",
   "version": "0.0.1",
   "description": "sockets.io iand three.js learning with a small-scale online explorable space centred on a brokerage and trading system.",
-  "main": "index.js",
+  "main": "routes/index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "cd routes && node index.js",
     "test": "mocha --reporter list"
   },
   "repository": {

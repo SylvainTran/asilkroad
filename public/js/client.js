@@ -562,7 +562,6 @@ $(function () {
 
                         // SERVER CODE
                         //
-                        //
                         // Client-side network controller
                         // Each client has their own socket, which the server can listen to
                         socket = io(); // client connection socket

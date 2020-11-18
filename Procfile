@@ -1,1 +1,1 @@
-web: node index.js
+web: cd routes && node index.js

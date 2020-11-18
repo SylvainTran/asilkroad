@@ -17,10 +17,7 @@ var Server = Server = Server || {};
 Server.express = require('express');
 Server.path = require('path');
 Server.WorldServer = Server.express();
-// Local host version
-// let joinedAbsPath = Server.express.static(Server.path.join(__dirname, "/public");
-// Server.WorldServer.use('/public', joinedAbsPath);
-Server.WorldServer.use(Server.express.static('public'));
+Server.WorldServer.use('/public', Server.express.static(Server.path.join(__dirname, "../public")));
 Server.http = require('http').createServer(Server.WorldServer);
 // Emitter for CycleEvents
 Server.GameEventsEmitter = require('socket.io').listen(Server.http);
@@ -669,8 +666,8 @@ const cycleSettings = {
 // DEVELOPMENT LOGGER:
 //
 // CYCLE SETTINGS
-console.log("World Cycle Settings: ");
-console.log(cycleSettings);
+// console.log("World Cycle Settings: ");
+// console.log(cycleSettings);
 // MVC Architecture... The View will contain the rendered world
 Server.Model = {};
 Server.View = {};
@@ -738,16 +735,16 @@ Server.Model.CycleSettings = function (cycleSettings) {
 
 // Test Object: The server's model
 const ServerModelCycleSettings = Server.Model.CycleSettings(cycleSettings).CycleSettings();
-console.log("A");
-console.log(ServerModelCycleSettings);
+// console.log("A");
+// console.log(ServerModelCycleSettings);
 
 // LOGIC LAYER:
 // @args: ServerModelCycleSettings
 // CycleEvents: Controller for in-game cycle events 
 Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
     // Data test
-    console.log("B");
-    console.log(ServerModelCycleSettings.getCycleCheckPoints());
+    // console.log("B");
+    // console.log(ServerModelCycleSettings.getCycleCheckPoints());
     // Private
     const date = new Date();
     const nowHours = date.getUTCHours();
@@ -769,7 +766,7 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
             // Convert cycleGenerationDuration to real life hours
             // One hour = 1000 * 60 * 60 milliseconds
             const hourInMs = 1000 * 60 * 60;
-            console.log("Starting a new cycle in one hour.");
+            // console.log("Starting a new cycle in one hour.");
             SERVER_CYCLE_TICK = 10000; // Starting in...
             break;
         default:
