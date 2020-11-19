@@ -429,6 +429,7 @@ $(function () {
                 canvas,
                 antialias: true
             });
+            renderer.physicallyCorrectLights = true; // Physical lights switch
             renderer.shadowMap.enabled = true;
             renderer.gammaOutput = true;
             renderer.gammaFactor = 2.2;
@@ -439,7 +440,7 @@ $(function () {
                 50,
                 window.innerWidth / window.innerHeight,
                 0.1,
-                3000
+                500
             );
             camera.position.z = 91;
             camera.position.x = 89;
@@ -461,13 +462,13 @@ $(function () {
             scene.add(hemiLight);
 
             // Fog
-            scene.fog = new THREE.FogExp2(0x25388a, 0.0025);
+            scene.fog = new THREE.FogExp2(0x25388a, 0.0040);
 
             let d = 8.25;
-            let dirLight = new THREE.DirectionalLight(0xfc9e19, 0.1);
+            let dirLight = new THREE.DirectionalLight(0xfc9e19, 0.01);
             dirLight.position.set(-8, 10, 8);
             dirLight.castShadow = true;
-            dirLight.shadow.mapSize = new THREE.Vector2(1024, 1024);
+            dirLight.shadow.mapSize = new THREE.Vector2(2048, 2048);
             dirLight.shadow.camera.near = 0.1;
             dirLight.shadow.camera.far = 1500;
             dirLight.shadow.camera.left = d * -1;
@@ -526,8 +527,12 @@ $(function () {
                     playerModel.castShadow = true;
                     scene.add(playerModel);
                     // Add lantern light to player's cart 
-                    let lanternLight = new THREE.PointLight(0xfc9e19, 10);
-                    lanternLight.position.set(0, 5, 0);
+                    let lanternLight = new THREE.PointLight(0xFFFFFF, 0.1);
+                    lanternLight.power = 800;
+                    lanternLight.decay = 1;
+                    lanternLight.distance = Infinity;
+                    lanternLight.scale.set(1, 1, 1);
+                    lanternLight.position.set(0, 2, 0);
                     lanternLight.castShadow = true;
                     scene.add(lanternLight);
                     lanternLight.parent = playerModel;
