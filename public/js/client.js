@@ -24,8 +24,10 @@ $(function () {
                 this.pickedObject = intersectedObjects[0].object;
                 // using the global objectTag for now
                 objectTag = this.pickedObject.userData['tag']; // Custom object mesh label used to know if it can be interacted with
+                // console.log(objectTag);
                 // Update global object resource too
                 objectTagResourceProperty = this.pickedObject.userData['resource'];
+                // console.log(objectTagResourceProperty);
                 // Update selected obj uuid
                 selectedObjUUID = this.pickedObject.parent.parent.uuid;
                 // Walkable object?
@@ -105,7 +107,7 @@ $(function () {
     // Terrain model
     let terrainModel;
     // Average terrain ground height to place models (temporary)
-    const averageGroundHeight = 20;
+    const averageGroundHeight = 8;
 
     // CAMERA
     // Smooth factor
@@ -118,9 +120,12 @@ $(function () {
     let newPos;
 
     // Model paths
-    const MODEL_PATH = '/public/models/terrain_0002_export.glb';
+    const MODEL_PATH = '/public/models/terrain_0003_export.glb';
     const TREE_PATH = '/public/models/tree_low_0001_export.glb';
     const PLAYER_PATH = '/public/models/player_cart_0001_export.glb';
+    
+    // Env. Props
+    const STONE_PATH = '/public/models/stone_0001_export.glb'
 
     // Three.js variables
     let camera;
@@ -455,17 +460,17 @@ $(function () {
             // scene.add( axesHelper );
 
             // Add lights
-            let hemiLight = new THREE.HemisphereLight(0xFF9C4C, 0xFF9C4C, 0.05);
+            let hemiLight = new THREE.HemisphereLight(0xFF9C4C, 0xFF9C4C, 0.005);
             hemiLight.position.set(0, 50, 0);
 
             // Add hemisphere light to scene
             scene.add(hemiLight);
 
             // Fog
-            scene.fog = new THREE.FogExp2(0x25388a, 0.0040);
+            scene.fog = new THREE.FogExp2(0x25388a, 0.00040);
 
             let d = 8.25;
-            let dirLight = new THREE.DirectionalLight(0xfc9e19, 0.01);
+            let dirLight = new THREE.DirectionalLight(0xfc9e19, 0.001);
             dirLight.position.set(-8, 10, 8);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize = new THREE.Vector2(2048, 2048);
@@ -516,7 +521,7 @@ $(function () {
 
                     playerModel = gltf.scene;
                     playerModel.scale.set(10, 10, 10);
-                    playerModel.position.set(0, 20, 0);
+                    playerModel.position.set(0, averageGroundHeight, 0);
                     // Shadows for each mesh
                     playerModel.traverse(function (child) {
                         if (child instanceof THREE.Mesh) {
@@ -527,10 +532,10 @@ $(function () {
                     playerModel.castShadow = true;
                     scene.add(playerModel);
                     // Add lantern light to player's cart 
-                    let lanternLight = new THREE.PointLight(0xFFFFFF, 0.1);
-                    lanternLight.power = 800;
-                    lanternLight.decay = 1;
-                    lanternLight.distance = Infinity;
+                    let lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
+                    lanternLight.power = 2000;
+                    lanternLight.decay = 1.5;
+                    lanternLight.distance = 300;
                     lanternLight.scale.set(1, 1, 1);
                     lanternLight.position.set(0, 2, 0);
                     lanternLight.castShadow = true;
@@ -1004,12 +1009,12 @@ $(function () {
                 activeSRIs.splice(i, 1);
                 for(let _i = 0; _i < gameModels.length; _i++) {
                     if(gameModels[_i].uuid === uuidToDelete) {
-                        console.log("found game model raycast to delete");
+                        // console.log("found game model raycast to delete");
                         gameModels.splice(_i, 1);
                     }
                 }
                 for(let i = 0; i < activeSRIs.length; i++) {
-                    console.log("Sanity check: " + activeSRIs[i]);
+                    // console.log("Sanity check: " + activeSRIs[i]);
                 }
                 // Emit to others that YOU destroyed that resource
                 socket.emit("onResourceDestroyed", uuidToDelete);
