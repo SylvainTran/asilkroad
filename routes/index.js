@@ -544,6 +544,7 @@ let brokerage = new Map();
 brokerage = setupBrokerage();
 // RESOURCE CACHE (SRIs)
 let instantiatedResources = [];
+let activeSRI = []; // UPDATE THIS WHEN PLAYERS TAKE DOWN AN SRI
 
 // setupBrokerage
 //
@@ -758,8 +759,11 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
     // Tick counter (will stop ticking stop the game once the Cycle Total Duration has been ticked)
     let tickCount = 0;
     let serverCycleTickInterval;
+    const MIN_INSTANCES_PER_CYCLE = 5;
+    const MAX_INSTANCES_PER_CYCLE = 15; 
     // RESOURCE PATHS FOR GENERATION
     const TREE_PATH = '/public/models/tree_low_0001_export.glb';
+    const MAX_ACTIVE_SRI = 5;
 
     switch (cycleTick) {
         case "hourly":
@@ -767,7 +771,8 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
             // One hour = 1000 * 60 * 60 milliseconds
             const hourInMs = 1000 * 60 * 60;
             // console.log("Starting a new cycle in one hour.");
-            SERVER_CYCLE_TICK = 10000; // Starting in...
+            // SERVER_CYCLE_TICK = 600 * 1000; // Every 10 minutes
+            SERVER_CYCLE_TICK = 10 * 1000; // Every 10 minutes
             break;
         default:
             break;
@@ -786,17 +791,50 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
         loopCycleEvents: function () {
             if (tickCount === 0) {
                 serverCycleTickInterval = setInterval(() => {
-                    if (tickCount >= ServerModelCycleSettings.getCycleCheckPoints()) {
-                        clearInterval(serverCycleTickInterval);
-                        console.log("Game over.");
-                        return; // Cycles are over at this stage
-                    }
+                    // Reset
+                    instantiatedResources = null;
+                    instantiatedResources = [];
+                    // if (tickCount >= ServerModelCycleSettings.getCycleCheckPoints()) {
+                    //     clearInterval(serverCycleTickInterval);
+                    //     console.log("Game over.");
+                    //     return; // Cycles are over at this stage
+                    // }
                     // Checkpoint: Check all logged in sockets' data
                     // And update the world, until end of Cycle Total Duration
                     // Generate a new SRI
                     // RESOURCES
-                    let newResourceUUID = THREE.MathUtils.generateUUID();
-                    instantiatedResources.push(newResourceUUID);
+                    // Only generate when the special resources left are all GONE.
+                    if(activeSRI.length >= MAX_ACTIVE_SRI) {
+                        return;
+                    }
+                    if(activeSRI.length === 0) {
+                        activeSRI = [];
+                    }
+                    let randType = THREE.MathUtils.randInt(0, 10);
+                    let resourceType;
+                    if(randType <= 3){
+                        resourceType = "tree";                     
+                    } else if(randType <= 6) {
+                        resourceType = "tree"; // Only trees for now TODO add more types
+                    } else {
+                        resourceType = "tree";
+                    }
+                    // let randResCount = THREE.MathUtils.randInt(MIN_INSTANCES_PER_CYCLE, MAX_INSTANCES_PER_CYCLE);
+                    let randResCount = 1; // Simple case
+
+                    for(let i = 0; i < randResCount; i++) {
+                        let newResourceUUID = THREE.MathUtils.generateUUID();
+                        let loadConfig = {
+                            scale: 1,
+                            position: new THREE.Vector3(THREE.MathUtils.randInt(-1000, 1000), 0, THREE.MathUtils.randInt(-100, 100)), // TODO defined places on the map read from file
+                            type: resourceType,
+                            uuid: newResourceUUID,
+                        };
+                        //console.log(loadConfig.position);
+                        instantiatedResources.push(loadConfig);
+                        // Update the activeSRI
+                        activeSRI.push(loadConfig);
+                    }
                     // emit this tree to the players so that they can load it
                     console.log("NEW CYCLE BEGIN: " + tickCount + "th cycle.");
                     Server.GameEventsEmitter.emit("newCycleBegin", {message: "A New Special Resource Instance has spawned in the world.", resources: instantiatedResources } );
@@ -814,8 +852,6 @@ Server.LogicController.CycleEvents(ServerModelCycleSettings).loopCycleEvents();
 // Join game
 let newGameId = (Math.random() * 100000) | 0;
 console.log("Emit created new game with game room id: " + newGameId);
-let players = [];
-let numPlayersInRoom = 0;
 // Create new brokerage
 
 function getHostGameModel() {
@@ -844,7 +880,7 @@ Server.bindHostEvents = function (socket) {
         // TODO need hard fast fail here... do not allow player to enter game if no game data
         // TODO make this only for the client who just joined
         // Update this newly joined player socket (only) with previously joined avatars
-        Server.GameEventsEmitter.to(socket.id).emit('joinedClientId', { clientId: Server.clientIdsCounter, gameData: gameData, olderAvatars: connectedAvatars } );        
+        Server.GameEventsEmitter.to(socket.id).emit('joinedClientId', { clientId: Server.clientIdsCounter, gameData: gameData, olderAvatars: connectedAvatars, activeSRI: activeSRI } );        
         // IMPoRTANT; need to constantly keep connectedAvatars pdated with latest position
         // Broadcast to everyone but the sender that avatar
         socket.broadcast.emit('newAvatarInWorld', {socketId: this.id, data: JSON.stringify(data)});
@@ -931,6 +967,17 @@ Server.bindHostEvents = function (socket) {
     });
     socket.on('onBuildItem', function () {
 
+    });
+    socket.on("onResourceDestroyed", function(uuid) {
+        console.log("uuid to splice");
+        for(let i = 0; i < activeSRI.length; i++) {
+            console.log(activeSRI[i].uuid);
+            if(activeSRI[i].uuid === uuid) {
+                console.log("Found uuid to delete on server");
+                activeSRI.splice(i, 1);
+            }
+        }
+        socket.broadcast.emit("onPlayerDestroyedAResource", {activeSRI: activeSRI, uuidDelete: uuid});
     });
 }
 

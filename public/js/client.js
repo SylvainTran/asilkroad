@@ -22,11 +22,12 @@ $(function () {
             if (intersectedObjects.length) {
                 // pick the first object. It's the closest one
                 this.pickedObject = intersectedObjects[0].object;
-                console.log(this.pickedObject);
                 // using the global objectTag for now
                 objectTag = this.pickedObject.userData['tag']; // Custom object mesh label used to know if it can be interacted with
                 // Update global object resource too
                 objectTagResourceProperty = this.pickedObject.userData['resource'];
+                // Update selected obj uuid
+                selectedObjUUID = this.pickedObject.parent.parent.uuid;
                 // Walkable object?
                 const walkable = this.pickedObject.userData['walkable'];
                 // Signs and Feedback : Text UI
@@ -44,7 +45,6 @@ $(function () {
                 }
                 // Interactivity selector : Deal with objects according to their custom userData tag
                 if (walkable === 'true') {
-                    console.log("walking");
                     // Pass in the point where the ray intersected with the mesh under the mouse cursor to get the move position
                     updatePosition(intersectedObjects[0].point);
                 }
@@ -62,7 +62,7 @@ $(function () {
     // THREE JS
     //
     // 
-    
+
     // CLIENT NETWORK CONTROLLER CODE
     //
     /////////////////////////////////
@@ -84,6 +84,10 @@ $(function () {
     let objectTag = null;
     // The resource property of the tagged object
     let objectTagResourceProperty = null;
+    // The uuid of the currently selected object
+    let selectedObjUUID;
+    // The obj to delete
+    let objToDeleteUUID;
     // The player 
     let playerModel; // Loaded in init() only, but used to update positions etc.
     // Used for movement
@@ -140,6 +144,7 @@ $(function () {
 
     // Game model meshes
     let gameModels = [];
+    let activeSRIs = [];
 
     // Update position
     function updatePosition(point) {
@@ -173,7 +178,6 @@ $(function () {
     }
     // Pop the DOM context menu
     function popContextMenuDOM(event) {
-        console.log(event.data);
         let dialogConfig = {
             autoOpen: false,
             show: {
@@ -397,7 +401,9 @@ $(function () {
         $(newLi).html(objectTagResourceProperty + " x1");
         $('#inventory').append(newLi);
         // Destroy the resource from the game world!
-        
+        objToDeleteUUID = selectedObjUUID;
+        destroyResource(objToDeleteUUID);
+        socket.emit('emitCollectedSRIResource', selectedObjUUID);
         // Add eventlistener for the INVENTORY + BROKERAGE
         const contextMenu = $('#inventory-contextMenu--select-container');
         $('#' + resource.uniqueId).on("click", {
@@ -504,352 +510,388 @@ $(function () {
                 terrainModel.receiveShadow = true;
                 scene.add(terrainModel);
 
-                // Trees
-                tree.load(TREE_PATH, function (gltf) {
-                    treeModel = gltf.scene;
-                    treeModel.scale.set(1, 1, 1);
-                    treeModel.position.set(0, 0, 0);
-                    // treeModel.traverse(function(child) {
-                    //   if(child instanceof THREE.Mesh) {
-                    //     child.castShadow = true;
-                    //     child.receiveShadow = true;
-                    //   }
-                    // });
-                    treeModel.castShadow = true;
-                    scene.add(treeModel);
+                // Player cart
+                playerCart.load(PLAYER_PATH, function (gltf) {
 
-                    // Player cart
-                    playerCart.load(PLAYER_PATH, function (gltf) {
+                    playerModel = gltf.scene;
+                    playerModel.scale.set(10, 10, 10);
+                    playerModel.position.set(0, 20, 0);
+                    // Shadows for each mesh
+                    playerModel.traverse(function (child) {
+                        if (child instanceof THREE.Mesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    playerModel.castShadow = true;
+                    scene.add(playerModel);
+                    // Add lantern light to player's cart 
+                    let lanternLight = new THREE.PointLight(0xfc9e19, 10);
+                    lanternLight.position.set(0, 5, 0);
+                    lanternLight.castShadow = true;
+                    scene.add(lanternLight);
+                    lanternLight.parent = playerModel;
 
-                        playerModel = gltf.scene;
-                        playerModel.scale.set(10, 10, 10);
-                        playerModel.position.set(0, 20, 0);
-                        console.log(playerModel);
-                        // Shadows for each mesh
-                        playerModel.traverse(function (child) {
-                            if (child instanceof THREE.Mesh) {
-                                child.castShadow = true;
-                                child.receiveShadow = true;
+                    // TODO terrain raycaster
+                    terrainRaycaster = new THREE.Raycaster();
+                    terrainRaycaster.set(playerModel.position, new THREE.Vector3(0, -1, 0));
+
+                    // Camera follow setup
+                    relCameraPos = camera.position.sub(playerModel.position);
+                    relCameraPosMag = camera.position.distanceTo(playerModel.position) - 0.5;
+                    // Everything has been loaded at this point
+                    // Cache our game models' mesh for raycasting
+                    // TODO if an object with multiple meshes, group them or do something more efficient
+                    // Loop through all scene children
+                    gameModels.push(scene.children[2].children[0]); // Mesh object -- terrain
+                    // gameModels.push(scene.children[3].children[0].children[0]); // Mesh object
+                    // gameModels.push(scene.children[3].children[0].children[1]); // Mesh object
+                    gameModels.push(scene.children[3].children[0].children[0]); // Mesh object // Player cart
+                    gameModels.push(scene.children[3].children[0].children[1]); // Mesh object // Player cart
+                    gameModels.push(scene.children[3].children[0].children[2]); // Mesh object // Player cart lantern light
+
+                    // SERVER CODE
+                    //
+                    // Client-side network controller
+                    // Each client has their own socket, which the server can listen to
+                    socket = io(); // client connection socket
+                    //const randomString = Math.random().toString(36).replace(/[^a-z]+/g, ''); // Used for generating uniquePlayerId
+                    // myUniquePlayerId = new Hashes.SHA256().hex(randomString); // uniquePlayerId used to let the server and other players know who this unique entity is
+                    myUniquePlayerId = THREE.MathUtils.generateUUID();
+                    console.log(myUniquePlayerId);
+                    const loadConfig = {
+                        scale: 10,
+                        uniquePlayerId: null,
+                        playerModel: null,
+                        position: null
+                    }; // Model loader config 
+                    // Confirm before leaving page
+                    // $(window).bind("beforeunload", function (e) {
+                    //     return "Do you really want to leave the game?";
+                    // })
+                    // Disconnect event
+                    socket.on('disconnect', function () {
+                        otherConnectedPlayers = [];
+                    });
+                    socket.on('connect', function (data) {
+                        // Join and send the playerModel for others to see
+                        // PASS THE UNIQUE ID TOO
+                        socket.emit('join', {
+                            playerModel: playerModel,
+                            position: playerModel.position,
+                            uniquePlayerId: myUniquePlayerId
+                        });
+
+                        // Initial handshake => Backwards update for older avatars that were already instantiated
+                        socket.on('joinedClientId', function (data) {
+                            // cache id
+                            socketId = data.clientId;
+                            // Cache the game data
+                            gameData = data.gameData;
+                            // Init inventory (from database)
+                            // initInventory();            
+                            // Send older avatars
+                            // If the ids are differnt than this client id, load their model and last position
+                            for (let i = 0; i < data.olderAvatars.length; i++) {
+                                if (data.olderAvatars[i].data.uniquePlayerId !== myUniquePlayerId) { // load
+                                    loadConfig.uniquePlayerId = data.olderAvatars[i].data.uniquePlayerId;
+                                    loadConfig.playerModel = data.olderAvatars[i].data.playerModel;
+                                    loadConfig.position = data.olderAvatars[i].data.position;
+                                    loadNewAvatar(PLAYER_PATH, loadConfig);
+                                }
+                            }
+                            // Create current brokerage
+                            // Refresh view
+                            // Cache brokerage
+                            $('#brokerage-list').html('');
+                            brokerage = new Map(JSON.parse(gameData.brokerage));
+                            let content, newLi;
+                            brokerage.forEach((item, info) => {
+                                content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
+                                newLi = $('<li>');
+                                updateBrokerageView(item, info, newLi);
+                                $('#brokerage-list').append($(newLi).text(content));
+                            });
+                            // Create current active SRI                            
+                            let loader = new THREE.GLTFLoader();
+                            let resourceScene;
+                            loadNewResource(loader, resourceScene, TREE_PATH, data.activeSRI);    
+                        });
+                        //load others avatar
+                        socket.on('newAvatarInWorld', function (avatar) {
+                            const parsedAvatar = JSON.parse(avatar.data);
+                            // update load config
+                            loadConfig.uniquePlayerId = parsedAvatar.uniquePlayerId;
+                            loadConfig.playerModel = parsedAvatar.playerModel;
+                            loadConfig.position = parsedAvatar.position;
+                            // Clone the avatar first in an instance of THREE.Object3D
+                            loadNewAvatar(PLAYER_PATH, loadConfig);
+                            // Alert the others
+                            socket.emit('chat message', "A new player entered the game.");
+                        });
+                        // Update connected avatars on request
+                        socket.on('updatedConnectedAvatars', function (data) {
+                            // Search for any differences 
+                            // in the currently active scene models
+                            let uuidToDelete = data.disconnectedPlayerId;
+                            for (let i = 0; i < otherConnectedPlayers.length; i++) {
+                                if (otherConnectedPlayers[i].uniquePlayerId === uuidToDelete) {
+                                    // console.log(otherConnectedPlayers[i].gltfRef.uuid);
+                                    // console.log("DELETING DISCONNECTED PLAYER");
+                                    for (let j = 0; j < scene.children.length; j++) {
+                                        // console.log("UUID " + scene.children[j].uuid);
+                                        if (scene.children[j].uuid === otherConnectedPlayers[i].gltfRef.uuid) {
+                                            let meshes = scene.children[j].children[0].children;
+                                            console.log(meshes);
+                                            for (let k = 0; k < meshes.length; k++) {
+                                                meshes[k].geometry.dispose();
+                                                meshes[k].material.dispose();
+                                                scene.remove(meshes[k].parent.parent); // Mesh -> Group -> glTF scene object
+                                                renderer.dispose();
+                                            }
+                                        }
+                                    }
+                                    otherConnectedPlayers.splice(i, 1);
+                                }
                             }
                         });
-                        playerModel.castShadow = true;
-                        scene.add(playerModel);
-                        // Add lantern light to player's cart 
-                        let lanternLight = new THREE.PointLight(0xfc9e19, 10);
-                        lanternLight.position.set(0, 5, 0);
-                        lanternLight.castShadow = true;
-                        scene.add(lanternLight);
-                        lanternLight.parent = playerModel;
-
-                        // TODO terrain raycaster
-                        terrainRaycaster = new THREE.Raycaster();
-                        terrainRaycaster.set(playerModel.position, new THREE.Vector3(0, -1, 0));
-
-                        // Camera follow setup
-                        relCameraPos = camera.position.sub(playerModel.position);
-                        relCameraPosMag = camera.position.distanceTo(playerModel.position) - 0.5;
-                        console.log(relCameraPos);
-                        console.log(relCameraPosMag);
-
-                        // Everything has been loaded at this point
-                        // Cache our game models' mesh for raycasting
-                        // TODO if an object with multiple meshes, group them or do something more efficient
-                        // Loop through all scene children
-                        gameModels.push(scene.children[2].children[0]); // Mesh object
-                        gameModels.push(scene.children[3].children[0].children[0]); // Mesh object
-                        gameModels.push(scene.children[3].children[0].children[1]); // Mesh object
-                        gameModels.push(scene.children[4].children[0].children[0]); // Mesh object // Player cart
-                        gameModels.push(scene.children[4].children[0].children[1]); // Mesh object // Player cart
-                        gameModels.push(scene.children[4].children[0].children[2]); // Mesh object // Player cart
-                        console.log(scene.children);
-
-                        // SERVER CODE
+                        socket.on('emitToOtherPlayersChangedWorldPosition', function (data) {
+                            if (otherConnectedPlayers.length <= 0) {
+                                return;
+                            }
+                            // console.log("Client: Player with id " + data.myUniquePlayerId + " moved to new position: ");
+                            // console.log(data.desiredPositionGoal);
+                            // Update other players if there are any
+                            // Search the model associated with that player ID
+                            for (let i = 0; i < otherConnectedPlayers.length; i++) {
+                                if (otherConnectedPlayers[i].uniquePlayerId === data.myUniquePlayerId) {
+                                    // Append update new movementData packet, render() will handle the rest?
+                                    otherConnectedPlayers[i].movementData = data;
+                                }
+                            }
+                            // Update all players' position
+                            for (let i = 0; i < otherConnectedPlayers.length; i++) {
+                                let otherCurrentPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.positionGoalProgress.x, otherConnectedPlayers[i].movementData.positionGoalProgress.y, otherConnectedPlayers[i].movementData.positionGoalProgress.z);
+                                let otherGoalPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.desiredPositionGoal.x, otherConnectedPlayers[i].movementData.desiredPositionGoal.y, otherConnectedPlayers[i].movementData.desiredPositionGoal.z);
+                                // Lerp towards the goal 
+                                otherCurrentPos.lerp(otherGoalPos, 0.1);
+                                // Update the model
+                                let otherPlayerModel = otherConnectedPlayers[i].gltfRef;
+                                // console.log(otherPlayerModel);
+                                otherPlayerModel.position.set(otherCurrentPos.x, averageGroundHeight, otherCurrentPos.z);
+                                playSound("#otherPlayerMove");
+                            }
+                        });
+                        // Error handling
+                        socket.on('connect_error', (error) => {
+                            console.log("connectionError");
+                            // TODO					
+                        });
+                        // When browser launches, fetch any room ids from host
+                        socket.emit("fetchGameId");
+                        // on new game created
+                        socket.on('fetchGameIdResponse', function (data) {
+                            console.log("Game room: " + data);
+                        });
+                        // GAME 
                         //
-                        // Client-side network controller
-                        // Each client has their own socket, which the server can listen to
-                        socket = io(); // client connection socket
-                        //const randomString = Math.random().toString(36).replace(/[^a-z]+/g, ''); // Used for generating uniquePlayerId
-                        // myUniquePlayerId = new Hashes.SHA256().hex(randomString); // uniquePlayerId used to let the server and other players know who this unique entity is
-                        myUniquePlayerId = THREE.MathUtils.generateUUID();
-                        console.log(myUniquePlayerId);
-                        const loadConfig = {
-                            scale: 10,
-                            uniquePlayerId: null,
-                            playerModel: null,
-                            position: null
-                        }; // Model loader config 
-                        // Confirm before leaving page
-                        // $(window).bind("beforeunload", function (e) {
-                        //     return "Do you really want to leave the game?";
-                        // })
-                        // Disconnect event
-                        socket.on('disconnect', function () {
-                            otherConnectedPlayers = [];
+                        // DATA
+                        socket.on('getGameData', function (data) {
+
                         });
-                        socket.on('connect', function (data) {
-                            // Join and send the playerModel for others to see
-                            console.log("Player model: " + playerModel);
-                            // PASS THE UNIQUE ID TOO
-                            socket.emit('join', {
-                                playerModel: playerModel,
-                                position: playerModel.position,
-                                uniquePlayerId: myUniquePlayerId
+                        socket.on('onRefreshBrokerage', function (updatedBrokerage) {
+                            // Recreate a map for the brokerage
+                            brokerage = new Map(JSON.parse(updatedBrokerage));
+                            // Refresh view
+                            $('#brokerage-list').html('');
+                            let content, newLi;
+                            brokerage.forEach((item, info) => {
+                                content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
+                                newLi = $('<li>');
+                                updateBrokerageView(item, info, newLi);
+                                $('#brokerage-list').append($(newLi).text(content));
                             });
+                        });
 
-                            // Initial handshake => Backwards update for older avatars that were already instantiated
-                            socket.on('joinedClientId', function (data) {
-                                // cache id
-                                socketId = data.clientId;
-                                // Cache the game data
-                                gameData = data.gameData;
-                                // Init inventory (from database)
-                                // initInventory();            
-                                // Send older avatars
-                                // If the ids are differnt than this client id, load their model and last position
-                                for (let i = 0; i < data.olderAvatars.length; i++) {
-                                    console.log("ID LOADED: " + data.olderAvatars[i].data.uniquePlayerId);
-                                    if (data.olderAvatars[i].data.uniquePlayerId !== myUniquePlayerId) { // load
-                                        loadConfig.uniquePlayerId = data.olderAvatars[i].data.uniquePlayerId;
-                                        loadConfig.playerModel = data.olderAvatars[i].data.playerModel;
-                                        loadConfig.position = data.olderAvatars[i].data.position;
-                                        loadNewAvatar(PLAYER_PATH, loadConfig);
-                                    }
-                                }
-                                // Create current brokerage
-                                // Refresh view
-                                // Cache brokerage
-                                $('#brokerage-list').html('');
-                                brokerage = new Map(JSON.parse(gameData.brokerage));
-                                let content, newLi;
-                                brokerage.forEach((item, info) => {
-                                    content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
-                                    newLi = $('<li>');
-                                    updateBrokerageView(item, info, newLi);
-                                    $('#brokerage-list').append($(newLi).text(content));
-                                });
-                            });
-                            //load others avatar
-                            socket.on('newAvatarInWorld', function (avatar) {
-                                const parsedAvatar = JSON.parse(avatar.data);
-                                // alert("NEW PLAYER");
-                                // console.log(parsedAvatar);
-                                // console.log("A NEW PLAYER JOINED THE WORLD AT: " + parsedAvatar.position.x + ", " + parsedAvatar.position.y + " ," + parsedAvatar.position.z);
-                                // console.log("THEIR SECRET ID: " + parsedAvatar.uniquePlayerId);
-                                // update load config
-                                loadConfig.uniquePlayerId = parsedAvatar.uniquePlayerId;
-                                loadConfig.playerModel = parsedAvatar.playerModel;
-                                loadConfig.position = parsedAvatar.position;
-
-                                // Clone the avatar first in an instance of THREE.Object3D
-                                loadNewAvatar(PLAYER_PATH, loadConfig);
-                            });
-                            // Update connected avatars on request
-                            socket.on('updatedConnectedAvatars', function (data) {
-                                // Search for any differences 
-                                // in the currently active scene models
-                                let uuidToDelete = data.disconnectedPlayerId;
-                                for (let i = 0; i < otherConnectedPlayers.length; i++) {
-                                    if (otherConnectedPlayers[i].uniquePlayerId === uuidToDelete) {
-                                        // console.log(otherConnectedPlayers[i].gltfRef.uuid);
-                                        // console.log("DELETING DISCONNECTED PLAYER");
-                                        for (let j = 0; j < scene.children.length; j++) {
-                                            // console.log("UUID " + scene.children[j].uuid);
-                                            if (scene.children[j].uuid === otherConnectedPlayers[i].gltfRef.uuid) {
-                                                let meshes = scene.children[j].children[0].children;
-                                                console.log(meshes);
-                                                for (let k = 0; k < meshes.length; k++) {
-                                                    meshes[k].geometry.dispose();
-                                                    meshes[k].material.dispose();
-                                                    scene.remove(meshes[k].parent.parent); // Mesh -> Group -> glTF scene object
-                                                    renderer.dispose();
-                                                }
-                                            }
-                                        }
-                                        otherConnectedPlayers.splice(i, 1);
-                                    }
-                                }
-                            });
-                            socket.on('emitToOtherPlayersChangedWorldPosition', function (data) {
-                                if (otherConnectedPlayers.length <= 0) {
-                                    return;
-                                }
-                                // console.log("Client: Player with id " + data.myUniquePlayerId + " moved to new position: ");
-                                // console.log(data.desiredPositionGoal);
-                                // Update other players if there are any
-                                // Search the model associated with that player ID
-                                for (let i = 0; i < otherConnectedPlayers.length; i++) {
-                                    if (otherConnectedPlayers[i].uniquePlayerId === data.myUniquePlayerId) {
-                                        // Append update new movementData packet, render() will handle the rest?
-                                        otherConnectedPlayers[i].movementData = data;
-                                    }
-                                }
-                                // Update all players' position
-                                for (let i = 0; i < otherConnectedPlayers.length; i++) {
-                                    let otherCurrentPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.positionGoalProgress.x, otherConnectedPlayers[i].movementData.positionGoalProgress.y, otherConnectedPlayers[i].movementData.positionGoalProgress.z);
-                                    let otherGoalPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.desiredPositionGoal.x, otherConnectedPlayers[i].movementData.desiredPositionGoal.y, otherConnectedPlayers[i].movementData.desiredPositionGoal.z);
-                                    // Lerp towards the goal 
-                                    otherCurrentPos.lerp(otherGoalPos, 0.1);
-                                    // Update the model
-                                    let otherPlayerModel = otherConnectedPlayers[i].gltfRef;
-                                    // console.log(otherPlayerModel);
-                                    otherPlayerModel.position.set(otherCurrentPos.x, averageGroundHeight, otherCurrentPos.z);
-                                    playSound("#otherPlayerMove");
-                                }
-                            });
-                            // Error handling
-                            socket.on('connect_error', (error) => {
-                                console.log("connectionError");
-                                // TODO					
-                            });
-                            // When browser launches, fetch any room ids from host
-                            socket.emit("fetchGameId");
-                            // on new game created
-                            socket.on('fetchGameIdResponse', function (data) {
-                                console.log("Game room: " + data);
-                            });
-                            // GAME 
-                            //
-                            // DATA
-                            socket.on('getGameData', function (data) {
-
-                            });
-                            socket.on('onRefreshBrokerage', function (updatedBrokerage) {
-                                // Recreate a map for the brokerage
-                                brokerage = new Map(JSON.parse(updatedBrokerage));
-                                // Refresh view
-                                $('#brokerage-list').html('');
-                                let content, newLi;
-                                brokerage.forEach((item, info) => {
-                                    content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
-                                    newLi = $('<li>');
-                                    updateBrokerageView(item, info, newLi);
-                                    $('#brokerage-list').append($(newLi).text(content));
-                                });
-                            });
-
-                            function updateBrokerageView(item, info, component) {
-                                let dialogConfig;
-                                $(component).addClass("brokerage-li");
-                                // Add greyed out look if no seller 
-                                if (item.sellerIds.length <= 0) {
-                                    $(component).addClass("brokerage--empty-listing");
-                                } else {
-                                    $(component).addClass("brokerage--with-listing");
-                                }
-                                $(component).on('click', function () {
-                                    $('#inventory-contextMenu--select-container').html("");
-                                    let confirmDialogConfig = {
-                                        autoOpen: true,
-                                        show: {
-                                            effect: "blind",
-                                            duration: 500
-                                        },
-                                        hide: {
-                                            effect: "puff",
-                                            duration: 250
-                                        },
-                                        resizable: true,
-                                        height: "auto",
-                                        width: 400,
-                                        modal: false,
-                                        title: "Confirm Purchase?",
-                                        buttons: {
-                                            "Confirm": function () {
-                                                let dataBundle = {uniquePlayerId: myUniquePlayerId, tradeInfo: {sellerId: $(this).data('sellerId'), info:info, item: item}, requestTimeStamp: Date.now()};
-                                                socket.emit('onBuyItem', dataBundle);
-                                                $(this).dialog("close");
-                                                $('#inventory-contextMenu--select-container').dialog("close");
-                                            },
-                                            Cancel: function () {
-                                                $(this).dialog("close");
-                                            }
-                                        }
-                                    };
-                                    let dialogConfig = {
-                                        autoOpen: false,
-                                        show: {
-                                            effect: "blind",
-                                            duration: 500
-                                        },
-                                        hide: {
-                                            effect: "puff",
-                                            duration: 250
-                                        },
-                                        resizable: true,
-                                        height: "auto",
-                                        width: 700,
-                                        modal: false,
-                                        title: info,
-                                        buttons: {
-                                            "Show sellers": function () {
-                                                $('#inventory-contextMenu--select-container').html("");
-                                                // TODO make this from Narrative in the item data
-                                                let header =  "Resource: " + info + "<br>" + "Value (AI Stock Value): " + item.value + " gold" + "<br>" + "Current Rarity: <span style=\"color: gold;\">Precious</span>" + "<br>" + "Used For: <em>\"You can't eat it, but maybe it can spark a nice fire. God only knows what awaits us in the dark.\"- The Friendly Anonymous Explorer</em>" + "<br>" + "<h1>Sellers:</h1><br>";
-                                                let ul = $("<ul>");                                                                                                
-                                                $('#inventory-contextMenu--select-container').append(header);
-                                                for (let i = 0; i < item.sellerIds.length; i++) {
-                                                    if (item.sellerIds[i] === undefined) continue;
-                                                    let li = $("<li>");
-                                                    $(li).on("click", function() {
-                                                        // Emit on buy request to server
-                                                        $('#inventory-contextMenu--buy-container').html("You are about to purchase an item from another player.");
-                                                        $('#inventory-contextMenu--buy-container').data("sellerId", item.sellerIds[i]).dialog(confirmDialogConfig);                                                        
-                                                    });
-                                                    $(li).html("Seller: " + item.sellerIds[i] + "<br>");
-                                                    $(ul).append(li);                                                    
-                                                }
-                                                $('#inventory-contextMenu--select-container').append(ul);
-                                            },
-                                            Cancel: function () {
-                                                $(this).dialog("close");
-                                            }
-                                        }
-                                    } // Dialog config
-                                    $('#inventory-contextMenu--select-container').dialog(dialogConfig);
-                                    $('#inventory-contextMenu--select-container').dialog("open");
-                                }); // on click
-                                return dialogConfig;
+                        function updateBrokerageView(item, info, component) {
+                            let dialogConfig;
+                            $(component).addClass("brokerage-li");
+                            // Add greyed out look if no seller 
+                            if (item.sellerIds.length <= 0) {
+                                $(component).addClass("brokerage--empty-listing");
+                            } else {
+                                $(component).addClass("brokerage--with-listing");
                             }
+                            $(component).on('click', function () {
+                                $('#inventory-contextMenu--select-container').html("");
+                                let confirmDialogConfig = {
+                                    autoOpen: true,
+                                    show: {
+                                        effect: "blind",
+                                        duration: 500
+                                    },
+                                    hide: {
+                                        effect: "puff",
+                                        duration: 250
+                                    },
+                                    resizable: true,
+                                    height: "auto",
+                                    width: 400,
+                                    modal: false,
+                                    title: "Confirm Purchase?",
+                                    buttons: {
+                                        "Confirm": function () {
+                                            let dataBundle = {
+                                                uniquePlayerId: myUniquePlayerId,
+                                                tradeInfo: {
+                                                    sellerId: $(this).data('sellerId'),
+                                                    info: info,
+                                                    item: item
+                                                },
+                                                requestTimeStamp: Date.now()
+                                            };
+                                            socket.emit('onBuyItem', dataBundle);
+                                            $(this).dialog("close");
+                                            $('#inventory-contextMenu--select-container').dialog("close");
+                                        },
+                                        Cancel: function () {
+                                            $(this).dialog("close");
+                                        }
+                                    }
+                                };
+                                let dialogConfig = {
+                                    autoOpen: false,
+                                    show: {
+                                        effect: "blind",
+                                        duration: 500
+                                    },
+                                    hide: {
+                                        effect: "puff",
+                                        duration: 250
+                                    },
+                                    resizable: true,
+                                    height: "auto",
+                                    width: 700,
+                                    modal: false,
+                                    title: info,
+                                    buttons: {
+                                        "Show sellers": function () {
+                                            $('#inventory-contextMenu--select-container').html("");
+                                            // TODO make this from Narrative in the item data
+                                            let header = "Resource: " + info + "<br>" + "Value (AI Stock Value): " + item.value + " gold" + "<br>" + "Current Rarity: <span style=\"color: gold;\">Precious</span>" + "<br>" + "Used For: <em>\"You can't eat it, but maybe it can spark a nice fire. God only knows what awaits us in the dark.\"- The Friendly Anonymous Explorer</em>" + "<br>" + "<h1>Sellers:</h1><br>";
+                                            let ul = $("<ul>");
+                                            $('#inventory-contextMenu--select-container').append(header);
+                                            for (let i = 0; i < item.sellerIds.length; i++) {
+                                                if (item.sellerIds[i] === undefined) continue;
+                                                let li = $("<li>");
+                                                $(li).on("click", function () {
+                                                    // Emit on buy request to server
+                                                    $('#inventory-contextMenu--buy-container').html("You are about to purchase an item from another player.");
+                                                    $('#inventory-contextMenu--buy-container').data("sellerId", item.sellerIds[i]).dialog(confirmDialogConfig);
+                                                });
+                                                $(li).html("Seller: " + item.sellerIds[i] + "<br>");
+                                                $(ul).append(li);
+                                            }
+                                            $('#inventory-contextMenu--select-container').append(ul);
+                                        },
+                                        Cancel: function () {
+                                            $(this).dialog("close");
+                                        }
+                                    }
+                                } // Dialog config
+                                $('#inventory-contextMenu--select-container').dialog(dialogConfig);
+                                $('#inventory-contextMenu--select-container').dialog("open");
+                            }); // on click
+                            return dialogConfig;
+                        }
 
-                            socket.on('onBuyItem', function () {
+                        socket.on('onBuyItem', function () {
 
-                            });
-                            socket.on('onSellItem', function () {
-                                // Emit sale
-                                // First validate if qty provided to sell matches actual inventory qty of that item
-
-                                // Also must emit requestRefreshBrokerage event after sale is complete
-                            });
-                            socket.on('onBuildItem', function () {
-
-                            });
-                            socket.on('chat message', function (msg) {
-                                console.log("sending message li");
-                                $('#messages').append($('<li>').text(msg));
-                            });
-                            socket.on('newCycleBegin', function (data) {
-                                console.log("A new cycle of natural resources began.");
-                                $('#messages').append($('<li>').text(data.message));
-                                console.log(data.resources[0]);
-                            });
                         });
-                        $('form').submit(function () {
-                            socket.emit('chat message', $('#chat-view-inputfield').val());
-                            $('#chat-view-inputfield').val('');
-                            return false;
+                        socket.on('onSellItem', function () {
+                            // Emit sale
+                            // First validate if qty provided to sell matches actual inventory qty of that item
+
+                            // Also must emit requestRefreshBrokerage event after sale is complete
                         });
-                        // Events
-                        // Attach a once event on the action 
-                        $('#contextMenu--select-collect').on("click", function (event) {
-                            gatherResource();
+                        socket.on('onBuildItem', function () {
+
                         });
-                        update();
-                    }); // player.load                
-                }); // tree.load
+                        socket.on('chat message', function (msg) {
+                            $('#messages').append($('<li>').text(msg));
+                        });
+                        socket.on('newCycleBegin', function (data) {
+                            console.log("A new cycle of natural resources has begun.");
+                            console.log(data.resources.length + " rare resources have spawned in the world.");
+                            $('#messages').append($('<li>').text(data.message));
+                            // Instantiate them in the world
+                            let loader = new THREE.GLTFLoader();
+                            let resourceScene;
+                            //let PATH;
+                            loadNewResource(loader, resourceScene, TREE_PATH, data.resources);
+                        });
+                        socket.on('onPlayerDestroyedAResource', function(data){
+                            // Renew active SRI
+                            activeSRIs = data.activeSRI;
+                            // Destroy the activeSRI with the uuid
+                            destroyMeshByUUID(data.uuidDelete);
+                        });
+                    }); // On connect
+                    $('form').submit(function () {
+                        socket.emit('chat message', $('#chat-view-inputfield').val());
+                        $('#chat-view-inputfield').val('');
+                        return false;
+                    });
+                    // Events
+                    // Attach a once event on the action 
+                    $('#contextMenu--select-collect').on("click", function (event) {
+                        gatherResource();
+                    });
+                    update();
+                }); // player.load                
             }); // terrain.load
         } // init
     } // Setup player
 
+    // factory for resources
+    function loadNewResource(loader, resourceScene, PATH, loadConfig) {
+        // console.log(loadConfig);
+        for (let i = 0; i < loadConfig.length; i++) {
+            let newResource = loadConfig[i];
+            loader.load(PATH, function (gltf) {
+                resourceScene = gltf.scene;
+                resourceScene.scale.set(newResource.scale, newResource.scale, newResource.scale);
+                resourceScene.position.set(newResource.position.x, newResource.position.y, newResource.position.z);
+                // Shadows for each mesh
+                resourceScene.traverse(function (child) {
+                    if (child instanceof THREE.Mesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                resourceScene.castShadow = true;
+                // Override the uuid with the server's
+                // console.log("old resource UUID : " + resourceScene.uuid);
+                resourceScene.uuid = newResource.uuid;
+                // console.log("new resource UUID : " + resourceScene.uuid);
+                // Cache that avatar for later use
+                let resourceBundle = {
+                    type: resourceScene.name,
+                    gltfRef: resourceScene,
+                    uuid: newResource.uuid,
+                    position: newResource.position
+                };
+                activeSRIs.push(resourceBundle);
+                // For raycasting, we need their meshes in the gameModels array
+                for (let i = 0; i < resourceScene.children[0].children.length; i++) {
+                    gameModels.push(resourceScene.children[0].children[i]); // the mesh
+                }
+                scene.add(resourceScene);
+                // console.log(scene.children);
+                // console.log(activeSRIs[0].uuid);
+            });
+        }
+    }
     // Factory for new avatar models
     function loadNewAvatar(PATH, loadConfig) {
         let newAvatar = new THREE.GLTFLoader();
@@ -947,6 +989,46 @@ $(function () {
         renderer.render(scene, camera);
     } // render
 
+    function destroyResource(uuidToDelete) {
+        // console.log("ALL ACTIVE SRIS" + activeSRIs);
+        for (let i = 0; i < activeSRIs.length; i++) {
+            // console.log("this uuid: " + activeSRIs[i].uuid);
+            // console.log("target: " + uuidToDelete);
+            if (activeSRIs[i].uuid === uuidToDelete) {
+                destroyMeshByUUID(uuidToDelete);
+                activeSRIs.splice(i, 1);
+                for(let _i = 0; _i < gameModels.length; _i++) {
+                    if(gameModels[_i].uuid === uuidToDelete) {
+                        console.log("found game model raycast to delete");
+                        gameModels.splice(_i, 1);
+                    }
+                }
+                for(let i = 0; i < activeSRIs.length; i++) {
+                    console.log("Sanity check: " + activeSRIs[i]);
+                }
+                // Emit to others that YOU destroyed that resource
+                socket.emit("onResourceDestroyed", uuidToDelete);
+            }
+        }
+    }
+
+    function destroyMeshByUUID(uuidToDelete) {
+        // Update global with the networked uuid to delete 
+        objToDeleteUUID = uuidToDelete;
+        for (let j = 0; j < scene.children.length; j++) {
+            if (scene.children[j].uuid === uuidToDelete) {
+                let meshes = scene.children[j].children[0].children;
+                // console.log(meshes);
+                for (let k = 0; k < meshes.length; k++) {
+                    meshes[k].geometry.dispose();
+                    meshes[k].material.dispose();
+                    scene.remove(meshes[k].parent.parent); // Mesh -> Group -> glTF scene object
+                    renderer.dispose();
+                }
+            }
+        }
+    }
+        
     function viewingPosCheck(checkPos, playerPosition) {
         let raycaster = new THREE.Raycaster();
         let dir = playerPosition.sub(checkPos);
@@ -956,7 +1038,6 @@ $(function () {
         // get the list of objects the ray intersected
         let hits = raycaster.intersectObjects(gameModels);
         if (hits.length > 0) {
-            alert("OK")
             // pick the first object. It's the closest one
             console.log(hits[0].distance);
             console.log(hits[0].object.name);
