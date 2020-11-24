@@ -1,11 +1,22 @@
 // Client code
 $(function () {
+    // Game model meshes
+    let gameModels = [];
+    let activeSRIs = [];
+
     // Helper util classes (TODO require them from external files)
     class PickHelper {
         constructor() {
             this.raycaster = new THREE.Raycaster();
             this.pickedObject = null;
             this.pickedObjectSavedColor = 0;
+            this.gameModels = gameModels;
+        }
+        getGameModels() {
+            return this.gameModels;
+        }
+        setGameModels(newGameModels) {
+            this.gameModels = newGameModels;
         }
         pick(normalizedPosition, gameModels, camera, scene, event) {
             // restore the color if there is a picked object
@@ -18,8 +29,12 @@ $(function () {
             // cast a ray through the frustum
             this.raycaster.setFromCamera(normalizedPosition, camera);
             // get the list of objects the ray intersected
-            const intersectedObjects = this.raycaster.intersectObjects(gameModels);
+            const intersectedObjects = this.raycaster.intersectObjects(this.gameModels);
+            // for(let i = 0; i < this.gameModels.length; i++) {
+            //     console.log("Game model UUID: " + this.gameModels[i].parent.parent.uuid);
+            // }
             if (intersectedObjects.length) {
+                if(intersectedObjects[0].object === null) return;
                 // pick the first object. It's the closest one
                 this.pickedObject = intersectedObjects[0].object;
                 // using the global objectTag for now
@@ -146,10 +161,6 @@ $(function () {
     // Event handlers binding
     $(document).ready(setupPlayer);
     $(document).click(setupMusicPlayer);
-
-    // Game model meshes
-    let gameModels = [];
-    let activeSRIs = [];
 
     // Update position
     function updatePosition(point) {
@@ -382,8 +393,7 @@ $(function () {
                 inventory.push(dataBundle);
             }
         }
-        console.log('added new resource to inventory : ');
-        console.log(inventory);
+        console.log('Added a new resource to inventory.');
         // Update view
         // sound:
         let soundFX = null;
@@ -399,7 +409,7 @@ $(function () {
         }
         // inventory view: // each item img/icon/text will have a unique id from 1 to maxsize (24)
         // With an event listener on click to open a context menu / send to brokerage
-        console.log('added item with unique id: ' + resource.uniqueId);
+        console.log('Item with unique id: ' + resource.uniqueId);
         let newLi = $("<li>");
         $(newLi).addClass("brokerage-li");
         $(newLi).attr('id', resource.uniqueId);
@@ -429,6 +439,15 @@ $(function () {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(backgroundColor);
 
+            // Override for logger
+            scene.toString = function sceneToString() {
+                let ret;
+                for(let i = 0; i < this.children.length; i++) {
+                    ret = 'UUID: ' + this.children[i].uuid;
+                }
+                return ret;
+            }
+    
             // Init the renderer
             renderer = new THREE.WebGLRenderer({
                 canvas,
@@ -522,13 +541,6 @@ $(function () {
                     playerModel = gltf.scene;
                     playerModel.scale.set(10, 10, 10);
                     playerModel.position.set(0, averageGroundHeight, 0);
-                    // Shadows for each mesh
-                    playerModel.traverse(function (child) {
-                        if (child instanceof THREE.Mesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
                     playerModel.castShadow = true;
                     scene.add(playerModel);
                     // Add lantern light to player's cart 
@@ -553,13 +565,14 @@ $(function () {
                     // Cache our game models' mesh for raycasting
                     // TODO if an object with multiple meshes, group them or do something more efficient
                     // Loop through all scene children
-                    gameModels.push(scene.children[2].children[0]); // Mesh object -- terrain
+                    let pickHelperGameModels = [];
+                    pickHelperGameModels.push(scene.children[2].children[0]); // Mesh object -- terrain
                     // gameModels.push(scene.children[3].children[0].children[0]); // Mesh object
                     // gameModels.push(scene.children[3].children[0].children[1]); // Mesh object
-                    gameModels.push(scene.children[3].children[0].children[0]); // Mesh object // Player cart
-                    gameModels.push(scene.children[3].children[0].children[1]); // Mesh object // Player cart
-                    gameModels.push(scene.children[3].children[0].children[2]); // Mesh object // Player cart lantern light
-
+                    pickHelperGameModels.push(scene.children[3].children[0].children[0]); // Mesh object // Player cart
+                    pickHelperGameModels.push(scene.children[3].children[0].children[1]); // Mesh object // Player cart
+                    pickHelperGameModels.push(scene.children[3].children[0].children[2]); // Mesh object // Player cart lantern light
+                    pickHelper.setGameModels(pickHelperGameModels);
                     // SERVER CODE
                     //
                     // Client-side network controller
@@ -568,7 +581,6 @@ $(function () {
                     //const randomString = Math.random().toString(36).replace(/[^a-z]+/g, ''); // Used for generating uniquePlayerId
                     // myUniquePlayerId = new Hashes.SHA256().hex(randomString); // uniquePlayerId used to let the server and other players know who this unique entity is
                     myUniquePlayerId = THREE.MathUtils.generateUUID();
-                    console.log(myUniquePlayerId);
                     const loadConfig = {
                         scale: 10,
                         uniquePlayerId: null,
@@ -872,13 +884,6 @@ $(function () {
                 resourceScene = gltf.scene;
                 resourceScene.scale.set(newResource.scale, newResource.scale, newResource.scale);
                 resourceScene.position.set(newResource.position.x, newResource.position.y, newResource.position.z);
-                // Shadows for each mesh
-                resourceScene.traverse(function (child) {
-                    if (child instanceof THREE.Mesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
                 resourceScene.castShadow = true;
                 // Override the uuid with the server's
                 // console.log("old resource UUID : " + resourceScene.uuid);
@@ -894,7 +899,7 @@ $(function () {
                 activeSRIs.push(resourceBundle);
                 // For raycasting, we need their meshes in the gameModels array
                 for (let i = 0; i < resourceScene.children[0].children.length; i++) {
-                    gameModels.push(resourceScene.children[0].children[i]); // the mesh
+                    pickHelper.getGameModels().push(resourceScene.children[0].children[i]); // the mesh
                 }
                 scene.add(resourceScene);
                 // console.log(scene.children);
@@ -910,13 +915,6 @@ $(function () {
             newAvatarMesh = gltf.scene;
             newAvatarMesh.scale.set(loadConfig.scale, loadConfig.scale, loadConfig.scale);
             newAvatarMesh.position.set(loadConfig.position.x, loadConfig.position.y, loadConfig.position.z);
-            // Shadows for each mesh
-            newAvatarMesh.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
             newAvatarMesh.castShadow = true;
             // Cache that avatar for later use
             let avatarBundle = {
@@ -1007,15 +1005,18 @@ $(function () {
             if (activeSRIs[i].uuid === uuidToDelete) {
                 destroyMeshByUUID(uuidToDelete);
                 activeSRIs.splice(i, 1);
-                for(let _i = 0; _i < gameModels.length; _i++) {
-                    if(gameModels[_i].uuid === uuidToDelete) {
-                        // console.log("found game model raycast to delete");
-                        gameModels.splice(_i, 1);
+                let closedGameModels = pickHelper.getGameModels();
+                for(let _i = 0; _i < closedGameModels.length; _i++) {
+                    if(closedGameModels[_i].parent.parent.uuid === uuidToDelete) {
+                        let newGameModels = closedGameModels.filter(function(currentValue, index, arr){
+                            return (arr[index].parent.parent.uuid !== uuidToDelete);
+                        });
+                        pickHelper.setGameModels(newGameModels);
                     }
                 }
-                for(let i = 0; i < activeSRIs.length; i++) {
-                    // console.log("Sanity check: " + activeSRIs[i]);
-                }
+                // for(let i = 0; i < activeSRIs.length; i++) {
+                //     console.log("Sanity check: " + activeSRIs[i].uuid);
+                // }
                 // Emit to others that YOU destroyed that resource
                 socket.emit("onResourceDestroyed", uuidToDelete);
             }
