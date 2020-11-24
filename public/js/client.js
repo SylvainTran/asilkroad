@@ -1005,20 +1005,24 @@ $(function () {
             if (activeSRIs[i].uuid === uuidToDelete) {
                 destroyMeshByUUID(uuidToDelete);
                 activeSRIs.splice(i, 1);
-                let closedGameModels = pickHelper.getGameModels();
-                for(let _i = 0; _i < closedGameModels.length; _i++) {
-                    if(closedGameModels[_i].parent.parent.uuid === uuidToDelete) {
-                        let newGameModels = closedGameModels.filter(function(currentValue, index, arr){
-                            return (arr[index].parent.parent.uuid !== uuidToDelete);
-                        });
-                        pickHelper.setGameModels(newGameModels);
-                    }
-                }
+                updateGameModelsCache(uuidToDelete);
                 // for(let i = 0; i < activeSRIs.length; i++) {
                 //     console.log("Sanity check: " + activeSRIs[i].uuid);
                 // }
                 // Emit to others that YOU destroyed that resource
                 socket.emit("onResourceDestroyed", uuidToDelete);
+            }
+        }
+    }
+
+    function updateGameModelsCache(uuidToDelete) {
+        let closedGameModels = pickHelper.getGameModels();
+        for(let _i = 0; _i < closedGameModels.length; _i++) {
+            if(closedGameModels[_i].parent.parent.uuid === uuidToDelete) {
+                let newGameModels = closedGameModels.filter(function(currentValue, index, arr){
+                    return (arr[index].parent.parent.uuid !== uuidToDelete);
+                });
+                pickHelper.setGameModels(newGameModels);
             }
         }
     }
@@ -1038,6 +1042,8 @@ $(function () {
                 }
             }
         }
+        // update gameModels cache too
+        updateGameModelsCache(uuidToDelete);
     }
         
     function viewingPosCheck(checkPos, playerPosition) {
