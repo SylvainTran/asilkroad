@@ -78,6 +78,12 @@ hr.thick {
     grid-area: 1/1/2/2;
 }
 
+.ui--lantern-light-level {
+    font-size: 2em;
+    position: relative;
+    top: 50px;
+}
+
 #graphics-view--canvas {
     width: 1200px;
     height: 500px;

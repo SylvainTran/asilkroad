@@ -3,7 +3,56 @@ $(function () {
     // Game model meshes
     let gameModels = [];
     let activeSRIs = [];
+    // LanterLight
+    let lanternLight;
+    // clock for frame rates and also decreasing factors
+    let clock = new THREE.Clock();
+    let speed = 2;
+    let delta = 0;
+    let player; // client player instance
 
+    class Player {
+        constructor(lanternLight) {
+            // Private properties            
+            this.lanternLight = lanternLight; // Physical lantern light
+            this.maxLanternLightPower = 2000;
+        }
+        // Public methods
+        getLanternLight() {
+            return this.lanternLight; 
+        }
+        // Sets the player's lantern light values
+        setPlayerLanternLightValues(power, decay, distance) {
+            this.lanternLight.power = power;
+            this.lanternLight.decay = decay;
+            this.lanternLight.distance = distance;
+        }
+        updatePlayerLanternLightValues(delta) {
+            // lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
+            // lanternLight.power = 2000;
+            // lanternLight.decay = 1.5;
+            // lanternLight.distance = 300;
+            // lanternLight.scale.set(1, 1, 1);
+            // lanternLight.position.set(0, 2, 0);
+            // lanternLight.castShadow = true;
+            // scene.add(lanternLight);
+            // lanternLight.parent = playerModel;
+            // let decay = 1.5;
+            // let distance = 300;
+            this.lanternLight.power -= (1/(1-0.5)) * delta * 10;
+            this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
+            // Update UI 
+            $('.ui--lantern-light-level').html("Oil: " + Math.floor(this.lanternLight.power));
+            // this.lanternLight.decay = decay;
+            // this.lanternLight.distance = distance;
+        }
+        playerFeedLanternLight(item) {
+            // console.log(item);
+            let feedAmount = item.info.item.value; // TODO set this up by item type
+            this.lanternLight.power += feedAmount * 100;
+            this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
+        }
+    }
     // Helper util classes (TODO require them from external files)
     class PickHelper {
         constructor() {
@@ -224,6 +273,8 @@ $(function () {
                     $(this).dialog("close");
                 },
                 "Consume (permanent)": function () {
+                    player.playerFeedLanternLight(event.data.item);
+                    removeFromInventory(event.data.item);
                     $(this).dialog("close");
                 },
                 Cancel: function () {
@@ -434,8 +485,7 @@ $(function () {
         console.log("client js loaded");
         init();
 
-        function init() {
-
+        function init() {           
             scene = new THREE.Scene();
             scene.background = new THREE.Color(backgroundColor);
 
@@ -469,7 +519,7 @@ $(function () {
             camera.position.z = 91;
             camera.position.x = 89;
             camera.position.y = 142;
-
+            
             // Camera helper
             // const helper = new THREE.CameraHelper(camera);
             // scene.add(helper);
@@ -544,7 +594,8 @@ $(function () {
                     playerModel.castShadow = true;
                     scene.add(playerModel);
                     // Add lantern light to player's cart 
-                    let lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
+                    // Light as a mechanic
+                    lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
                     lanternLight.power = 2000;
                     lanternLight.decay = 1.5;
                     lanternLight.distance = 300;
@@ -553,6 +604,9 @@ $(function () {
                     lanternLight.castShadow = true;
                     scene.add(lanternLight);
                     lanternLight.parent = playerModel;
+
+                    // Create the player
+                    player = new Player(lanternLight); 
 
                     // TODO terrain raycaster
                     terrainRaycaster = new THREE.Raycaster();
@@ -954,8 +1008,6 @@ $(function () {
             currentWorldPosition.z = positionGoalProgress.z;
             // Update the model
             playerModel.position.set(currentWorldPosition.x, averageGroundHeight, currentWorldPosition.z);
-            // let delta = performance.now() * 0.001;
-            // console.log(delta);
             // TODO import three-pathfinding.js (stretch)  
             // TODO Position on terrain with raycaster
             // terrainRaycaster.set(playerModel.position, new THREE.Vector3(0, -1, 0));
@@ -963,33 +1015,40 @@ $(function () {
             // console.log(intersects[0]);
             // playerModel.position.y = intersects[0].point.y + 30;
             // Camera
-            //     let standardPos = playerModel.position.add(relCameraPos);
-            //     //console.log(standardPos);
-            //     let up = new THREE.Vector3(0, 1, 0);
-            //     let abovePos = playerModel.position.add(up.multiplyScalar(relCameraPosMag));
-            //     //console.log(abovePos);
-            //     let checkPoints = [];
-            //     checkPoints.push(standardPos);
-            //     checkPoints.push(standardPos.lerp(abovePos, 0.25));
-            //     checkPoints.push(standardPos.lerp(abovePos, 0.50));
-            //     checkPoints.push(standardPos.lerp(abovePos, 0.75));
-            //     checkPoints.push(abovePos);
+            // let standardPos = playerModel.position.add(relCameraPos);
+            // // console.log(standardPos);
+            // let up = new THREE.Vector3(0, 1, 0);
+            // let upScaled = up.multiplyScalar(relCameraPosMag);
+            // let abovePos = playerModel.position.add(upScaled);
+            // // console.log(abovePos);
+            // let checkPoints = [];
+            // delta = clock.getDelta();
+            // //console.log(delta);
+            // checkPoints.push(standardPos);
+            // checkPoints.push(standardPos.lerp(abovePos, 0.0025 * delta));
+            // checkPoints.push(standardPos.lerp(abovePos, 0.0050 * delta));
+            // checkPoints.push(standardPos.lerp(abovePos, 0.0075 * delta));
+            // checkPoints.push(abovePos);
 
-            //     // console.log(checkPoints[0]);
-            //     // console.log(checkPoints[1]);
-            //     // console.log(checkPoints[2]);
-            //     // console.log(checkPoints[3]);
-            //     // console.log(checkPoints[4]);
-            //     // alert("TOP")
-            //     for (let i = 0; i < checkPoints.length; i++) {
-            //         //console.log(checkPoints[i].x + " " + checkPoints[i].y + " " + checkPoints[i].z);
-            //         if (viewingPosCheck(checkPoints[i], playerModel.position)) {
-            //             break;
-            //         }
+            // console.log(checkPoints[0]);
+            // console.log(checkPoints[1]);
+            // console.log(checkPoints[2]);
+            // console.log(checkPoints[3]);
+            // console.log(checkPoints[4]);
+            // for (let i = 0; i < checkPoints.length; i++) {
+            //     console.log(checkPoints[i].x + " " + checkPoints[i].y + " " + checkPoints[i].z);
+            //     let c = viewingPosCheck(checkPoints[i], playerModel.position);
+            //     console.log(c);
+            //     if (c) {
+            //         break;
             //     }
-            // camera.position.lerp(newPos, smooth * 0.01);
+            // }
+            // camera.position.lerp(newPos, smooth * delta);
             camera.lookAt(positionGoalProgress);
         }
+        // Update light values
+        delta = clock.getDelta();
+        player.updatePlayerLanternLightValues(delta);
         //smoothLookAt(playerModel);
         // }
         // Update other players' position
@@ -1047,13 +1106,16 @@ $(function () {
     }
         
     function viewingPosCheck(checkPos, playerPosition) {
+         console.log(checkPos);
+         console.log(playerPosition);
         let raycaster = new THREE.Raycaster();
-        let dir = playerPosition.sub(checkPos);
-        //console.log(checkPos);
-        // console.log(dir.x + " " + dir.y + " " + dir.z);
+        let dir = new THREE.Vector3().copy(playerPosition.sub(checkPos));
+        console.log(dir);
+        //console.log(dir.x + " " + dir.y + " " + dir.z);
         raycaster.set(checkPos, dir);
         // get the list of objects the ray intersected
-        let hits = raycaster.intersectObjects(gameModels);
+        let hits = raycaster.intersectObjects(pickHelper.getGameModels());
+        //console.log(hits);
         if (hits.length > 0) {
             // pick the first object. It's the closest one
             console.log(hits[0].distance);
