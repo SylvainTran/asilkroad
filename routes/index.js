@@ -365,7 +365,8 @@ const RAW_RESOURCES = [{
         name: "wood",
         weight: 10,
         value: 15,
-        produce: []
+        produce: ["wood_sculpture_t1_a", "lantern_table_t1_a"],
+        description: "You can't eat it, but maybe it can spark a nice fire. God only knows what awaits us in the dark. - The Friendly Anonymous Explorer"
     },
     {
         name: "fish",
@@ -556,16 +557,10 @@ function setupBrokerage() {
         brokerage.set(itemName, {
             'value': item['value'], // base value
             'totalQty': 0, // 0 for now
-            'sellerIds': [], // Empty for now
+            'sellerIds': [], // Empty for now -- TODO add an object containing also the unique item ID associated with the seller ID
         });
         // console.log(brokerage.get(itemName));
     }
-    // Map to array
-    // const _brokerage = Array.from(brokerage).reduce(function(obj, [key, value]){
-    //     obj[key] = value;
-    //     return obj;
-    // }, {});
-    // console.log(brokerage);
     return brokerage;
 }
 // sellItemToBrokerage
@@ -577,35 +572,15 @@ function sellItemToBrokerage(itemToSellData) {
     //if(!brokerage.has(itemToSellData.info.item.name)) return;
 
     // Update currentItem
-    let currentItemToSellData = brokerage.get(itemToSellData.info.item.name);  // Target
+    console.log(itemToSellData);
+    let currentItemToSellData = brokerage.get(itemToSellData.name);  // Target
     // // Update new seller
     currentItemToSellData.sellerIds.push(itemToSellData.metaData.sellerId);
     // Update new totalQty
     let newQty = parseInt(currentItemToSellData.totalQty);
     newQty += parseInt(itemToSellData.info.qty);
     currentItemToSellData.totalQty = newQty;
-    // console.log("TOTAL QTY: " + currentItemToSellData.totalQty);
-    // console.log(currentItemToSellData);
-
-    // Update value: Todo call another function
-    // May have to use map.delete instead here
-    // brokerage.set(itemToSellData.name, Object.assign(currentItemToSellData, updatedItemData));
-    // Refresh view by broadcasting the updated brokerage is done in a separate event request from client
-
-    // Template for sell item code
-    // On sell request, add to queue of objects to sell by Host.
-    // In a different sell function, run through sell queue (update it first), then
-    // Object.Assign() copy obj of mapped itemName for each request, and append new entry obj in sellerIds array 
-
-    // Template
-    // 'value': item['value'], // To be adjusted by host depending on totalQty (supply) and demand (depends on in-game factors etc. to be defined)
-    // 'totalQty': 0, // Calculated from all qtys in sellerIds
-    // 'sellerIds': [{ // Seller data
-    //     'thisSellerId': '', // To be provided at transaction (socket id)
-    //     'thisSellerName': '', //optional character's name
-    //     'timeStamp': null, // To be provided at transaction
-    //     'qty': 1, // can be any value up to a max value, to be provided at transaction
-    // }
+    currentItemToSellData.totalQty = THREE.MathUtils.clamp(currentItemToSellData.totalQty, 0, 999999);
 }
 
 // GAME: 
@@ -743,9 +718,6 @@ const ServerModelCycleSettings = Server.Model.CycleSettings(cycleSettings).Cycle
 // @args: ServerModelCycleSettings
 // CycleEvents: Controller for in-game cycle events 
 Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
-    // Data test
-    // console.log("B");
-    // console.log(ServerModelCycleSettings.getCycleCheckPoints());
     // Private
     const date = new Date();
     const nowHours = date.getUTCHours();
@@ -931,21 +903,21 @@ Server.bindHostEvents = function (socket) {
     socket.on('onBuyItem', function (itemToBuyData) {
         console.log(itemToBuyData);
         // Adjust item values in brokerage?
-        let oldTotalQty = brokerage.get(itemToBuyData.tradeInfo.info).totalQty;
+        let oldTotalQty = brokerage.get(itemToBuyData.name).totalQty;
         console.log(oldTotalQty);
         // TODO actually give the user the choice of how many pieces to buy, and group items by qty bundles
         // let qtyToBuy = itemToBuyData.tradeInfo.item.qty;
         // console.log(qtyToBuy);
-        let oldSellerIds = brokerage.get(itemToBuyData.tradeInfo.info).sellerIds;
-        let sellerIdToCompensate = itemToBuyData.tradeInfo.sellerId;
+        let oldSellerIds = brokerage.get(itemToBuyData.name).sellerIds;
+        let sellerIdToCompensate = itemToBuyData.metaData.sellerId;
         let index = oldSellerIds.indexOf(sellerIdToCompensate);
         oldSellerIds.splice(index, 1);
-        brokerage.set(itemToBuyData.tradeInfo.info, {
-            'value': itemToBuyData.tradeInfo.item.value, // TODO dynamically re-adjust value based on scarcity, offer and supply
+        brokerage.set(itemToBuyData.name, {
+            'value': itemToBuyData.info.item.value, // TODO dynamically re-adjust value based on scarcity, offer and supply
             'totalQty': oldTotalQty - 1, // TODO see previous TODO
             'sellerIds': oldSellerIds,
         });
-        console.log(brokerage.get(itemToBuyData.tradeInfo.info));
+        console.log(brokerage.get(itemToBuyData.name));
         // Take comission fee from seller (in buy function)
         // Pay a guaranteed ticket if quality is good enough?
         // Host appraises quality of good and changes rating of seller 
@@ -968,6 +940,9 @@ Server.bindHostEvents = function (socket) {
     });
     socket.on('onBuildItem', function () {
 
+    });
+    socket.on('onManufactureItem', function(dataBundle) {
+        console.log(dataBundle);
     });
     socket.on("onResourceDestroyed", function(uuid) {
         console.log("uuid to splice");

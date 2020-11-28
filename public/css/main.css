@@ -81,7 +81,10 @@ hr.thick {
 .ui--lantern-light-level {
     font-size: 2em;
     position: relative;
-    top: 50px;
+    top: 25px;
+    left: 100px;
+    display: inline-block;
+    z-index: 2;
 }
 
 #graphics-view--canvas {
@@ -232,6 +235,43 @@ form button {
     padding-top: 5px;
     background: hsla(15%, 25%, 35%, 0.1);
     font-weight: bold;
+}
+
+#ui--lantern-light-level {
+
+}
+
+#graphics-view--canvas {
+    position: relative;
+    top: -55px;
+    left: -3px;
+}
+
+.ui-buttons {
+    position: relative;
+    z-index: 1;
+    left: 200px;
+    width: 500px;
+    display: inline-block;
+    background-color: black;
+}
+
+.ui-button {
+    display: inline-block;
+}
+
+#ui-button-manufacture-list {
+    position: relative;
+    z-index: 1;
+}
+
+.ui-manufacture-panel {
+    display: none;
+    background-color: #3c3a46;
+    color: black;
+    height: 500px;
+    width: 500px;
+    overflow: auto;
 }
 
 #messages {

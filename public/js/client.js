@@ -3,6 +3,7 @@ $(function () {
     // Game model meshes
     let gameModels = [];
     let activeSRIs = [];
+    let manufacturingQueue = []; // Currently manufactured objects
     // LanterLight
     let lanternLight;
     // clock for frame rates and also decreasing factors
@@ -51,6 +52,9 @@ $(function () {
             let feedAmount = item.info.item.value; // TODO set this up by item type
             this.lanternLight.power += feedAmount * 100;
             this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
+        }
+        manufactureItem(item) {
+            popManufactureMenuDOM(item);
         }
     }
     // Helper util classes (TODO require them from external files)
@@ -241,8 +245,94 @@ $(function () {
         // }
         // TODO import three-pathfinding.js (stretch)  
     }
+
+    function popManufactureMenuDOM(item) {
+        let confirmDialogConfig = {
+            autoOpen: true,
+            show: {
+                effect: "blind",
+                duration: 500
+            },
+            hide: {
+                effect: "puff",
+                duration: 250
+            },
+            resizable: true,
+            height: "auto",
+            width: 400,
+            modal: false,
+            title: "Confirm Manufacture?",
+            buttons: {
+                "Confirm": function () {    
+                    // Match with produce that was passed in data                    
+                    let produce = $(this).data('produce'); // a string
+                    // Pass this request about what to manufacture to the factory
+                    console.log(item);
+                    let dataBundle = {
+                        uniqueItemId: item.info.uniqueId,
+                        name: item.name,
+                        produce: produce,
+                        progress: 0 // To be updated
+                    };
+                    //let newUniqueId = THREE.MathUtils.generateUUID();
+                    socket.emit('onManufactureItem', dataBundle);
+                    // Send back list of something thats needed by server people?
+                    removeFromInventory(item);
+                    // Update current manufactured items list cache
+                    manufacturingQueue.push(dataBundle);
+                    $(this).dialog("close");
+                },
+                Cancel: function () {
+                    $(this).dialog("close");
+                }
+            }
+        };
+        let dialogConfig = {
+            autoOpen: false,
+            show: {
+                effect: "blind",
+                duration: 500
+            },
+            hide: {
+                effect: "puff",
+                duration: 250
+            },
+            resizable: false,
+            height: "auto",
+            width: 800,
+            modal: false,
+            buttons: {
+                "Choose Tier": function () {
+                    console.log(item);
+                    $('#inventory-contextMenu--manufacture-container').html("");
+                    let header = "Resource: " + item.name + "<br>" + "Used For: <em>\"" + item.info.item.description + "\"</em>" + "<h1>Produces:</h1><br>";
+                    let ul = $("<ul>");
+                    $('#inventory-contextMenu--manufacture-container').append(header);
+                    for (let i = 0; i < item.info.item.produce.length; i++) {
+                        if (item.info.item.produce[i] === undefined) continue;
+                        let li = $("<li>");
+                        $(li).on("click", function () {
+                            // Emit on buy request to server
+                            $('#inventory-contextMenu--manufacture-container').html("You are about to manufacture this item. This will destroy the item.");
+                            $('#inventory-contextMenu--manufacture-container').data("produce", item.info.item.produce[i]).dialog(confirmDialogConfig);
+                        });
+                        $(li).html("Produce: " + item.info.item.produce[i] + "<br>");
+                        $(ul).append(li);
+                    }
+                    $('#inventory-contextMenu--manufacture-container').append(ul);
+                    $('.explorable-text-view--update').html("You are manufacturing: " + item.name);
+                },
+                Cancel: function () {
+                    $(this).dialog("close");
+                }
+            }
+        };
+        $('#inventory-contextMenu--manufacture-container').dialog(dialogConfig);
+        $('#inventory-contextMenu--manufacture-container').dialog("open");
+    }
     // Pop the DOM context menu
     function popContextMenuDOM(event) {
+        $('#inventory-contextMenu--select-container').html("");
         let dialogConfig = {
             autoOpen: false,
             show: {
@@ -260,16 +350,14 @@ $(function () {
             buttons: {
                 "Trade to Broker": function () {
                     // send t broker
-                    console.log("trading to broker " + event.data.item.info.item.name);
-                    console.log("with unique id " + event.data.item.info.uniqueId);
-                    console.log("Metadata : " + event.data.item.metaData.sellerId);
-                    console.log("Metadata : " + event.data.item.metaData.timeStamp);
+                    console.log(event.data.item);
                     removeFromInventory(event.data.item);
                     tradeToBroker(event.data.item);
-                    $('.explorable-text-view--update').html("You sent: " + event.data.item.info.item.name + " x" + event.data.item.info.qty + " to the brokerage.");
+                    $('.explorable-text-view--update').html("You sent: " + event.data.item.info + " x" + event.data.item.totalQty + " to the brokerage.");
                     $(this).dialog("close");
                 },
                 "Manufacture": function () {
+                    player.manufactureItem(event.data.item);
                     $(this).dialog("close");
                 },
                 "Consume (permanent)": function () {
@@ -438,6 +526,7 @@ $(function () {
                     timeStamp: Date.now() // ms
                 };
                 dataBundle = {
+                    name: gameData['rawResources'][i]['name'],
                     info: resource,
                     metaData: metaData
                 };
@@ -816,17 +905,37 @@ $(function () {
                                     modal: false,
                                     title: "Confirm Purchase?",
                                     buttons: {
-                                        "Confirm": function () {
+                                        "Confirm": function () {                        
+                                            let newUniqueId = THREE.MathUtils.generateUUID();
                                             let dataBundle = {
                                                 uniquePlayerId: myUniquePlayerId,
-                                                tradeInfo: {
-                                                    sellerId: $(this).data('sellerId'),
-                                                    info: info,
-                                                    item: item
+                                                name: info,
+                                                info: {
+                                                    item: item,
+                                                    uniqueId: newUniqueId,
+                                                    qty: 1
                                                 },
-                                                requestTimeStamp: Date.now()
+                                                metaData: {
+                                                    sellerId: $(this).data('sellerId'),
+                                                    timeStamp: Date.now()
+                                                }
                                             };
                                             socket.emit('onBuyItem', dataBundle);
+                                            // Get item
+                                            console.log(item);
+                                            console.log(info);
+                                            let newLi = $("<li>");
+                                            $(newLi).addClass("brokerage-li");
+                                            $(newLi).attr('id', newUniqueId);
+                                            $(newLi).html(info + " x1");
+                                            console.log(dataBundle);
+                                            $(newLi).on("click", {
+                                                event: null,
+                                                contextMenu: this,
+                                                scene: scene,
+                                                item: dataBundle
+                                            }, popContextMenuDOM);                                    
+                                            $('#inventory').append(newLi);                                      
                                             $(this).dialog("close");
                                             $('#inventory-contextMenu--select-container').dialog("close");
                                         },
@@ -922,6 +1031,48 @@ $(function () {
                     // Attach a once event on the action 
                     $('#contextMenu--select-collect').on("click", function (event) {
                         gatherResource();
+                    });
+                    $('#ui-button-manufacture-list').on('click', function(event) {
+                        // Prepare the ui
+                        $('.ui-manufacture-panel').html("");
+                        let header = "<h2>Current production: </h2>";
+                        let ul = $("<ul>");
+                        $('.ui-manufacture-panel').append(header);
+                        for (let i = 0; i < manufacturingQueue.length; i++) {
+                            let li = $("<li>");
+                            $(li).on("click", function() {
+                                // More details about the production
+
+                            });
+                            $(li).html("<h4>Produce: " + "<h5>" + manufacturingQueue[i].produce + "</h5>" + "<h4>" + "Progress (%): " + "</h4>" + "<h5>" + manufacturingQueue[i].progress + "</h5>");
+                            $(ul).append(li);
+                        }
+                        $('.ui-manufacture-panel').append(ul);
+                        let dialogOptions = {
+                            title: "Solar Manufacturing Queue",
+                            autoOpen: true,
+                            show: {
+                                effect: "blind",
+                                duration: 250
+                            },
+                            hide: {
+                                effect: "puff",
+                                duration: 250
+                            },
+                            resizable: false,
+                            height: 800,
+                            width: 800,
+                            modal: false,
+                            buttons: {
+                                Refresh: function() {
+                                    $(this).dialog("close");
+                                },
+                                Cancel: function () {
+                                    $(this).dialog("close");
+                                }
+                            } 
+                        }
+                        $('.ui-manufacture-panel').dialog(dialogOptions);
                     });
                     update();
                 }); // player.load                

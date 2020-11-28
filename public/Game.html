@@ -46,10 +46,8 @@
 			<!--Text View -->
 			<main class="explorable-text-view">
 				<h1>Story So Far</h1><br>
-				<p>The planet's surface is dark and almost silent. Your cart's wheels make a creepy sound that sends a twinge up your spine. Heck, even your own shadow startles you. A pair of little squirrels stare anyway. They vanish in the forest, as if they had just remembered something important to do.</p><br>
-				<p>This was not the agreed upon plan. The <strong>Space Colonization Bureau</strong> had reassured you that this exoplanet was the closest candidate to Earth's last known condition in <strong>Canis Major Dwarf</strong>, but nothing around you seems familiar. Why are you even a cart and not a body? (You hear a voice thundering from above: "Cause I don't know how to animate you, man.") Unfortunately, you lost sight of the rest of the crew after landing. You check your radio: its <strong>aluminium and steel material</strong> is badly damaged from the landing. You also check the most vital asset in your equipment: your <strong><span style="color: orange;">Exploration Lantern of Light</span></strong>. 
-					Miraculously, it has been undamaged from the landing. Without it, you cannot continue on, you recall from your Space Colonization Training. <strong>Dangerous exo-lifeforms known from previous explorers</strong> have been known to prey on those without their <strong><span style="color: orange;">Light</span></strong>. Keep your Exploration Lantern of Light filled with any <strong><span style="color: green;">consummable resource</span></strong> you can find.<br><br>Time is critical: <strong><span style="color: blue;">find a way to repair your radio comms.</span></strong></p>
-					<p>Pre-Alpha Developer's Notice: You can't finish this first mission yet. I need to finish my courses at school first, become a legend, AND make my mom proud. (BlahblahIWouldAppreciateMoneyBlah.) - Love You Greatly</p>
+				<p>This is a world without a sun. The people that survive are the ones who produce light.</p>
+				<p>There is this talk about an artificial sun being built in the city of Pret. The more powerful its light, the more cohabitants this planet can harbour into further generations.</p>			
 				<h4 class="explorable-text-view--update"></h4>
 			</main>
 
@@ -57,8 +55,12 @@
 			<div class="explorable-graphics-view">
 				<div class="ui--lantern-light-level">2000</div>
 				<canvas id="graphics-view--canvas" width="1200px" height=500px></canvas>
+				<div class="ui-buttons">
+					<button class="ui-button" id="ui-button-manufacture-list">Manufacturing List</button>
+				</div>
+				<div class="ui-manufacture-panel">
+				</div>
 			</div>
-
 			<!-- Logistics View -->
 			<div class="brokerage-view-container">
 			<!-- Brokerage View -->
@@ -108,6 +110,8 @@
 	<div id="inventory-contextMenu--select-container" title="Inventory Context Menu"></div>
 	<!-- Confirm buy from seller dialog -->
 	<div id="inventory-contextMenu--buy-container" title="Confirm Purchase?"></div>
+	<!-- Manufacturing context menu -->
+	<div id="inventory-contextMenu--manufacture-container" title="Manufacturing Menu"></div>
 	<audio id="playerMove">
 		<source src="/public/sounds/playerMove.mp3" type="audio/mpeg">
 	</audio>
