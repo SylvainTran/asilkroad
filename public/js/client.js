@@ -857,7 +857,7 @@ $(function () {
                                 // Pop-up tutorial
                                 $('#tutorial--container').html("");
                                 let p = $("<p>");
-                                let tutorialText = "<em>Welcome to asilkroad online, <strong>brave adventurer</strong>.<br><br>\"Looking good. What? My name, you ask?<br><br>...They call me 'Old Turtle' around here, probably because I'm old and slow. Very old. Just call me what you want, okay? I will be your guide for now. Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br>Choose <strong>'Collect'</strong> to continue.";
+                                let tutorialText = "<em>Welcome to asilkroad online, <strong>brave adventurer</strong>.<br><br>\"Looking good. What? My name, you ask?<br><br>...They call me 'Old Turtle' around here, probably because I'm old and slow. Very old. Just call me what you want, okay? I will be your guide for now. Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br><strong>Find a tree</strong>, and choose <strong>'Collect'</strong> to continue.";
                                 p.append(tutorialText);
                                 $('#tutorial--container').html(tutorialText);
                                 $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
@@ -1049,7 +1049,7 @@ $(function () {
                                                 // Pop-up tutorial
                                                 $('#tutorial--container').html("");
                                                 let p = $("<p>");
-                                                let tutorialText = "I bet you're confused right now. It's not so bad: This menu will show you the current value of the item, its rarity, what people generally use it for, and most importantly, it will show you a list of sellers who might sell you the item. <strong>Click on any seller in the list</strong> to continue.";
+                                                let tutorialText = "I bet you're confused right now. It's not so bad: This menu will show you the current value of the item, its rarity, what people generally use it for, and most importantly, it will show you a list of sellers who might sell you the item. <strong>Click on any seller in the list and choose to purchase one wood </strong> to continue.";
                                                 p.append(tutorialText);
                                                 $('#tutorial--container').html(tutorialText);
                                                 $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
