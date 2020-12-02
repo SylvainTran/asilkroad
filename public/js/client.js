@@ -11,6 +11,22 @@ $(function () {
     let speed = 2;
     let delta = 0;
     let player; // client player instance
+    // Actual progression
+    let progression = {
+        tutorials: {
+            movementControls: false,
+            cameraControls: false,
+            resourceCollectionActions: false,
+            inventoryActions: false,
+            brokerageActions: false,
+            brokerageActions2: false,
+            brokerageActions3: false,
+            events: false,
+            goals: false,
+            economy: false,
+            otherPlayers: false
+        }
+    };
 
     class Player {
         constructor(lanternLight) {
@@ -333,6 +349,19 @@ $(function () {
     }
     // Pop the DOM context menu
     function popContextMenuDOM(event) {
+        // Tutorial -- TODO UX, embed and play small video of gameplay tutorial
+        if(!progression.tutorials.brokerageActions) {
+            // Pop-up tutorial
+            $('#tutorial--container').html("");
+            let p = $("<p>");
+            let tutorialText = "You are amazing at this. I bet your parents are proud of you. Now that an item has been selected in your inventory, let's try trading it to the brokerage. Choose 'Trade to Broker' now.";
+            p.append(tutorialText);
+            $('#tutorial--container').html(tutorialText);
+            $('#tutorial--container').dialog({
+                position: { my: "center top", at: "center top", of: window }
+            });
+            progression.tutorials.brokerageActions = true;
+        }
         $('#inventory-contextMenu--select-container').html("");
         let dialogConfig = {
             autoOpen: false,
@@ -350,7 +379,6 @@ $(function () {
             modal: false,
             buttons: {
                 "Trade to Broker": function () {
-                    // send t broker
                     console.log(event.data.item);
                     removeFromInventory(event.data.item);
                     tradeToBroker(event.data.item);
@@ -384,6 +412,16 @@ $(function () {
     //
     // This sends the selected inventory item to the brokerage
     function tradeToBroker(item) {
+        // Tutorial
+        if(!progression.tutorials.brokerageActions2) {
+            $('#tutorial--container').html("");
+            let p = $("<p>");
+            let tutorialText = "Congratulations, you've just posted your first item on the brokerage. Now, let's try buying it back. Scroll down the list and find 'wood'. Click on it to trigger the buy menu.";
+            p.append(tutorialText);
+            $('#tutorial--container').html(tutorialText);
+            $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
+            progression.tutorials.brokerageActions2 = true;
+        }
         // emit onSellItem to server
         socket.emit('onSellItem', item);
         // Play sound FX
@@ -393,8 +431,6 @@ $(function () {
     // Pop the in-game context menu
     function popContextMenu(event) {
         // prevent event bubbling from massive amounts of clicks
-        // console.log(event.data);
-        // console.log(event.data.contextMenu);
         let contextMenu = event.contextMenu[0];
         if (event.event) {
             event.event.stopPropagation();
@@ -465,10 +501,6 @@ $(function () {
         }, (10));
     }
 
-    function openContextMenu() {
-        $('#contextMenu--select-container').css("display", "block");
-    }
-
     function closeContextMenu(event) {
         // TODO Don't close if clicked on context menu itself
         if ($('#contextMenu--select-container').css("display") === "block") {
@@ -476,29 +508,21 @@ $(function () {
         }
     }
 
-    function popInventoryContextMenu(item) {
-        let contextMenu = document.createElement("div");
-        contextMenu.id = "dialog";
-        contextMenu.title = "Resource";
-        let li = document.createElement("li");
-        let txt = document.createTextNode("Send to Broker?");
-        li.style.listStyleType = "none";
-        li.appendChild(txt);
-        let ul = document.createElement("ul");
-        ul.appendChild(li);
-        contextMenu.appendChild(ul);
-        document.body.append(contextMenu);
-
-        $('#dialog').dialog();
-        console.log("Sending item " + item.target.id + " to broker.");
-        // Remove from inventory
-        $('#' + item.target.id).remove();
-    }
-
     function gatherResource(event) {
         if (!gameData) {
             console.error("ERROR: no game data");
             return;
+        }
+        // Tutorial
+        if(!progression.tutorials.inventoryActions) {
+            // Pop-up tutorial
+            $('#tutorial--container').html("");
+            let p = $("<p>");
+            let tutorialText = "Well done! You have a great talent inside. Now that you have a resource, left click on it in the inventory to open the inventory context menu.";
+            p.append(tutorialText);
+            $('#tutorial--container').html(tutorialText);
+            $('#tutorial--container').dialog({position: { my: "center top", at: "center top", of: window }});
+            progression.tutorials.inventoryActions = true;
         }
         console.log('collecting a resource');
         // Check inventory space left
@@ -828,6 +852,17 @@ $(function () {
                             let loader = new THREE.GLTFLoader();
                             let resourceScene;
                             loadNewResource(loader, resourceScene, TREE_PATH, data.activeSRI);    
+                            // Check progression for tutorial status
+                            if(!progression.tutorials.resourceCollectionActions) {
+                                // Pop-up tutorial
+                                $('#tutorial--container').html("");
+                                let p = $("<p>");
+                                let tutorialText = "<em>Welcome to asilkroad online, <strong>brave adventurer</strong>.<br><br>\"Looking good. What? My name, you ask?<br><br>...They call me 'Old Turtle' around here, probably because I'm old and slow. Very old. Just call me what you want, okay? I will be your guide for now. Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br>Choose <strong>'Collect'</strong> to continue.";
+                                p.append(tutorialText);
+                                $('#tutorial--container').html(tutorialText);
+                                $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
+                                progression.tutorials.resourceCollectionActions = true;
+                            }
                         });
                         //load others avatar
                         socket.on('newAvatarInWorld', function (avatar) {
@@ -1010,6 +1045,17 @@ $(function () {
                                         "Show sellers": function () {
                                             $('#inventory-contextMenu--select-container').html("");
                                             // TODO make this from Narrative in the item data
+                                            if(!progression.tutorials.brokerageActions3) {
+                                                // Pop-up tutorial
+                                                $('#tutorial--container').html("");
+                                                let p = $("<p>");
+                                                let tutorialText = "I bet you're confused right now. It's not so bad: This menu will show you the current value of the item, its rarity, what people generally use it for, and most importantly, it will show you a list of sellers who might sell you the item. <strong>Click on any seller in the list</strong> to continue.";
+                                                p.append(tutorialText);
+                                                $('#tutorial--container').html(tutorialText);
+                                                $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
+                                                progression.tutorials.brokerageActions3 = true;
+                                            }
+                
                                             let header = "Resource: " + info + "<br>" + "Value (AI Stock Value): " + item.value + " gold" + "<br>" + "Current Rarity: <span style=\"color: gold;\">Precious</span>" + "<br>" + "Used For: <em>\"You can't eat it, but maybe it can spark a nice fire. God only knows what awaits us in the dark.\"- The Friendly Anonymous Explorer</em>" + "<br>" + "<h1>Sellers:</h1><br>";
                                             let ul = $("<ul>");
                                             $('#inventory-contextMenu--select-container').append(header);
