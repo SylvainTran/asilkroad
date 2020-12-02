@@ -40,13 +40,15 @@ html, body {
 }
 
 .brokerage-view-container {
-    border: 2px solid black;
-    height: 500px;
-    grid-area: 1/2/3/3;
-    background-color:#3c3a46;
+    background-color: black;
     color: white;
     overflow: auto;
     display: grid;
+    width: 500px;
+    height: 700px;
+    position: fixed;
+    top: 0;
+    right: 0;
 }
 
 #brokerage-view__content {
@@ -54,10 +56,6 @@ html, body {
     grid-row: 1;
     grid-column: 2;
     border: 1px solid white;
-}
-
-.brokerage-view__content--tabs div {
-
 }
 
 hr.thick {
@@ -71,28 +69,27 @@ hr.thick {
     border: 1px solid white;
 }
 
-.explorable-graphics-view {
-    position: relative;
-    border: 2px solid black;
-    height: 500px;
-    grid-area: 1/1/2/2;
-}
-
 .ui--lantern-light-level {
     font-size: 2em;
-    position: relative;
-    top: 25px;
-    left: 100px;
     display: inline-block;
     z-index: 2;
+    position: fixed;
+    top: 0;
+    left: 0;
 }
 
 #graphics-view--canvas {
-    width: 1200px;
-    height: 500px;
+    z-index: 0;
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
 }
 
 #contextMenu--select-container {
+    display: none;
     position: fixed;
     padding: 0; 
     margin: 0;
@@ -132,7 +129,7 @@ hr.thick {
 }
 
 .brokerage--empty-listing {
-    background-color: #3c3a46;
+    background-color: black;
     color: #2c2b2c;
     cursor: default;
 }
@@ -145,11 +142,15 @@ hr.thick {
 
 .explorable-text-view {
     border: 2px solid black;
-    height: 206px;
-    grid-area: 2/2/3/2;
-    background-color:#3c3a46;
+    height: 336px;
+    width: 377px;
+    background-color: black;
     color: rgb(255, 255, 255);
     overflow: auto;
+    z-index: 2;
+    position: fixed;
+    top: 10vh;
+    left: 0;
 }
 
 .explorable-text-view > h4 {
@@ -163,10 +164,13 @@ hr.thick {
 
 .chat-view-container {
     border: 2px solid rgb(226, 218, 218);
-    background-color:#3c3a46;
+    background-color: black;
     height: 160px;
     grid-area: 2/1/2/2;
     overflow: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
 }
 
 .chat-view-container li {
@@ -239,12 +243,6 @@ form button {
 
 #ui--lantern-light-level {
 
-}
-
-#graphics-view--canvas {
-    position: relative;
-    top: -55px;
-    left: -3px;
 }
 
 .ui-buttons {

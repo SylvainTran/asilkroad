@@ -54,6 +54,7 @@ $(function () {
             this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
         }
         manufactureItem(item) {
+            console.log(item);
             popManufactureMenuDOM(item);
         }
     }
@@ -353,7 +354,7 @@ $(function () {
                     console.log(event.data.item);
                     removeFromInventory(event.data.item);
                     tradeToBroker(event.data.item);
-                    $('.explorable-text-view--update').html("You sent: " + event.data.item.info + " x" + event.data.item.totalQty + " to the brokerage.");
+                    $('.explorable-text-view--update').html("You sent: " + event.data.item.name + " x" + event.data.item.info.qty + " to the brokerage.");
                     $(this).dialog("close");
                 },
                 "Manufacture": function () {
@@ -573,7 +574,37 @@ $(function () {
         // 3D view -- Three.js complete setup
         console.log("client js loaded");
         init();
-
+        // Draggable and resizable UI 
+        $(".brokerage-view-container").resizable({
+            start: function(event, ui) {
+                ui.element.draggable("disable");
+            },
+            stop: function(event, ui) {
+                ui.element.draggable("enable");
+            },
+            handles: "n, e, s, w"
+        });
+        $(".explorable-text-view").resizable({
+            start: function(event, ui) {
+                ui.element.draggable("disable");
+            },
+            stop: function(event, ui) {
+                ui.element.draggable("enable");
+            },
+            handles: "n, e, s, w"
+        });
+        $(".chat-view-container").resizable({
+            start: function(event, ui) {
+                ui.element.draggable("disable");
+            },
+            stop: function(event, ui) {
+                ui.element.draggable("enable");
+            },
+            handles: "n, e, s, w"
+        });
+        $(".brokerage-view-container" ).draggable();
+        $(".chat-view-container").draggable();
+        $(".explorable-text-view").draggable();
         function init() {           
             scene = new THREE.Scene();
             scene.background = new THREE.Color(backgroundColor);
@@ -597,7 +628,7 @@ $(function () {
             renderer.gammaOutput = true;
             renderer.gammaFactor = 2.2;
             renderer.setPixelRatio(window.devicePixelRatio);
-            canvasContainer.appendChild(renderer.domElement);
+            // canvasContainer.appendChild(renderer.domElement);
 
             camera = new THREE.PerspectiveCamera(
                 50,
@@ -640,6 +671,25 @@ $(function () {
             dirLight.shadow.camera.bottom = d * -1;
             // Add directional Light to scene
             scene.add(dirLight);
+
+            // Eco-system warm lights?
+            let tundraLight = new THREE.PointLight(0x87e5ff, 2.5);
+            tundraLight.power = 2000;
+            tundraLight.decay = 1.5;
+            tundraLight.distance = 600;
+            tundraLight.scale.set(10, 10, 10);
+            tundraLight.position.set(10, 10, 10);
+            tundraLight.castShadow = true;
+            scene.add(tundraLight);
+
+            let desertLight = new THREE.PointLight(0xfc7a00, 4.5);
+            desertLight.power = 2000;
+            desertLight.decay = 1.5;
+            desertLight.distance = 600;
+            desertLight.scale.set(10, 10, 10);
+            desertLight.position.set(10, 10, 300);
+            desertLight.castShadow = true;
+            scene.add(desertLight);
 
             const controls = new THREE.OrbitControls(camera, canvas);
             controls.target.set(0, 5, 0);
@@ -705,16 +755,13 @@ $(function () {
                     relCameraPos = camera.position.sub(playerModel.position);
                     relCameraPosMag = camera.position.distanceTo(playerModel.position) - 0.5;
                     // Everything has been loaded at this point
-                    // Cache our game models' mesh for raycasting
-                    // TODO if an object with multiple meshes, group them or do something more efficient
-                    // Loop through all scene children
                     let pickHelperGameModels = [];
-                    pickHelperGameModels.push(scene.children[2].children[0]); // Mesh object -- terrain
-                    // gameModels.push(scene.children[3].children[0].children[0]); // Mesh object
-                    // gameModels.push(scene.children[3].children[0].children[1]); // Mesh object
-                    pickHelperGameModels.push(scene.children[3].children[0].children[0]); // Mesh object // Player cart
-                    pickHelperGameModels.push(scene.children[3].children[0].children[1]); // Mesh object // Player cart
-                    pickHelperGameModels.push(scene.children[3].children[0].children[2]); // Mesh object // Player cart lantern light
+                    // Add scene meshes to raycasting cache
+                    scene.traverse(function(child) {
+                        if(child instanceof THREE.Mesh) {
+                            pickHelperGameModels.push(child);
+                        }
+                    });
                     pickHelper.setGameModels(pickHelperGameModels);
                     // SERVER CODE
                     //
@@ -1139,6 +1186,7 @@ $(function () {
     }
 
     function update() {
+        resizeRendererToDisplaySize(renderer);
         render();
         //console.log("x : " + camera.position.x + " y: " + camera.position.y + "z : " + camera.position.z);
         requestAnimationFrame(update);
@@ -1321,8 +1369,7 @@ $(function () {
         let canvasPixelWidth = canvas.width / window.devicePixelRatio;
         let canvasPixelHeight = canvas.height / window.devicePixelRatio;
 
-        const needResize =
-            canvasPixelWidth !== width || canvasPixelHeight !== height;
+        const needResize = canvasPixelWidth !== width || canvasPixelHeight !== height;
         if (needResize) {
             renderer.setSize(width, height, false);
         }

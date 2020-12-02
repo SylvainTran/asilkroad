@@ -554,7 +554,12 @@ function setupBrokerage() {
     for (let i = 0; i < RAW_RESOURCES.length; i++) {
         let item = RAW_RESOURCES[i];
         let itemName = item['name'];
+
         brokerage.set(itemName, {
+            'description': item['description'],
+            'weight': item['weight'],
+            'produce': item['produce'],
+            'effects': item['effects'],
             'value': item['value'], // base value
             'totalQty': 0, // 0 for now
             'sellerIds': [], // Empty for now -- TODO add an object containing also the unique item ID associated with the seller ID
@@ -829,6 +834,8 @@ console.log("Emit created new game with game room id: " + newGameId);
 
 function getHostGameModel() {
     let _brokerage = JSON.stringify(Array.from(brokerage));
+
+    console.log(_brokerage);
     return {
         'gameId': newGameId,
         'rawResources': RAW_RESOURCES,
@@ -912,7 +919,14 @@ Server.bindHostEvents = function (socket) {
         let sellerIdToCompensate = itemToBuyData.metaData.sellerId;
         let index = oldSellerIds.indexOf(sellerIdToCompensate);
         oldSellerIds.splice(index, 1);
+        let weight = brokerage.get(itemToBuyData.name).weight;
+        let produce = brokerage.get(itemToBuyData.name).produce;
+        let effects = brokerage.get(itemToBuyData.name).effects;
+
         brokerage.set(itemToBuyData.name, {
+            'weight': weight,
+            'produce': produce,
+            'effects': effects,
             'value': itemToBuyData.info.item.value, // TODO dynamically re-adjust value based on scarcity, offer and supply
             'totalQty': oldTotalQty - 1, // TODO see previous TODO
             'sellerIds': oldSellerIds,
@@ -962,7 +976,7 @@ Server.bindHostEvents = function (socket) {
 // MAIN GAME PORT
 let port = process.env.PORT; // heroku
 if(port == null || port == "") {
-    port = 3000;    
+    port = 8080;    
 }
 Server.http.listen(port, () => {
     console.log('listening on *:3000');
