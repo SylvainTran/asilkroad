@@ -4,6 +4,7 @@ $(function () {
     let gameModels = [];
     let activeSRIs = [];
     let manufacturingQueue = []; // Currently manufactured objects
+    let pickHelperGameModels = [];
     // LanterLight
     let lanternLight;
     // clock for frame rates and also decreasing factors
@@ -45,23 +46,10 @@ $(function () {
             this.lanternLight.distance = distance;
         }
         updatePlayerLanternLightValues(delta) {
-            // lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
-            // lanternLight.power = 2000;
-            // lanternLight.decay = 1.5;
-            // lanternLight.distance = 300;
-            // lanternLight.scale.set(1, 1, 1);
-            // lanternLight.position.set(0, 2, 0);
-            // lanternLight.castShadow = true;
-            // scene.add(lanternLight);
-            // lanternLight.parent = playerModel;
-            // let decay = 1.5;
-            // let distance = 300;
             this.lanternLight.power -= (1/(1-0.5)) * delta * 10;
             this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
             // Update UI 
-            $('.ui--lantern-light-level').html("Oil: " + Math.floor(this.lanternLight.power));
-            // this.lanternLight.decay = decay;
-            // this.lanternLight.distance = distance;
+            $('.ui--lantern-light-level').html("Oil Strength: " + Math.floor(this.lanternLight.power));
         }
         playerFeedLanternLight(item) {
             // console.log(item);
@@ -87,6 +75,9 @@ $(function () {
         }
         setGameModels(newGameModels) {
             this.gameModels = newGameModels;
+        }
+        addToGameModels(mesh) {
+            this.gameModels.push(mesh);
         }
         pick(normalizedPosition, gameModels, camera, scene, event) {
             // restore the color if there is a picked object
@@ -205,12 +196,13 @@ $(function () {
     let newPos;
 
     // Model paths
-    const MODEL_PATH = '/public/models/terrain_0003_export.glb';
+    const MODEL_PATH = '/public/models/terrain_export_0001.glb';
     const TREE_PATH = '/public/models/tree_low_0001_export.glb';
     const PLAYER_PATH = '/public/models/player_cart_0001_export.glb';
+    const BONFIRE_PATH = '/public/models/bonfire_export_0003.glb';
     
     // Env. Props
-    const STONE_PATH = '/public/models/stone_0001_export.glb'
+    const ROCK_PATH = '/public/models/rock_export_0001.glb';
 
     // Three.js variables
     let camera;
@@ -267,11 +259,11 @@ $(function () {
         let confirmDialogConfig = {
             autoOpen: true,
             show: {
-                effect: "blind",
+                effect: "fade",
                 duration: 500
             },
             hide: {
-                effect: "puff",
+                effect: "fade",
                 duration: 250
             },
             resizable: true,
@@ -307,11 +299,11 @@ $(function () {
         let dialogConfig = {
             autoOpen: false,
             show: {
-                effect: "blind",
+                effect: "fade",
                 duration: 500
             },
             hide: {
-                effect: "puff",
+                effect: "fade",
                 duration: 250
             },
             resizable: false,
@@ -366,16 +358,16 @@ $(function () {
         let dialogConfig = {
             autoOpen: false,
             show: {
-                effect: "blind",
+                effect: "fade",
                 duration: 500
             },
             hide: {
-                effect: "puff",
+                effect: "fade",
                 duration: 250
             },
             resizable: false,
             height: "auto",
-            width: 400,
+            width: "auto",
             modal: false,
             buttons: {
                 "Trade to Broker": function () {
@@ -392,6 +384,12 @@ $(function () {
                 "Consume (permanent)": function () {
                     player.playerFeedLanternLight(event.data.item);
                     removeFromInventory(event.data.item);
+                    $(this).dialog("close");
+                },
+                "Create campfire": function() {
+                    // HERE
+                    // instantiate a pre-designed campfire asset
+                    createBonfire();
                     $(this).dialog("close");
                 },
                 Cancel: function () {
@@ -675,6 +673,9 @@ $(function () {
             // Add lights
             let hemiLight = new THREE.HemisphereLight(0xFF9C4C, 0xFF9C4C, 0.005);
             hemiLight.position.set(0, 50, 0);
+            hemiLight.power = 5000;
+            hemiLight.decay = 2;
+            hemiLight.distance = 1000;
 
             // Add hemisphere light to scene
             scene.add(hemiLight);
@@ -683,7 +684,7 @@ $(function () {
             scene.fog = new THREE.FogExp2(0x25388a, 0.00040);
 
             let d = 8.25;
-            let dirLight = new THREE.DirectionalLight(0xfc9e19, 0.001);
+            let dirLight = new THREE.DirectionalLight(0x25388a, 0.001);
             dirLight.position.set(-8, 10, 8);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize = new THREE.Vector2(2048, 2048);
@@ -695,25 +696,6 @@ $(function () {
             dirLight.shadow.camera.bottom = d * -1;
             // Add directional Light to scene
             scene.add(dirLight);
-
-            // Eco-system warm lights?
-            let tundraLight = new THREE.PointLight(0x87e5ff, 2.5);
-            tundraLight.power = 2000;
-            tundraLight.decay = 1.5;
-            tundraLight.distance = 600;
-            tundraLight.scale.set(10, 10, 10);
-            tundraLight.position.set(10, 10, 10);
-            tundraLight.castShadow = true;
-            scene.add(tundraLight);
-
-            let desertLight = new THREE.PointLight(0xfc7a00, 4.5);
-            desertLight.power = 2000;
-            desertLight.decay = 1.5;
-            desertLight.distance = 600;
-            desertLight.scale.set(10, 10, 10);
-            desertLight.position.set(10, 10, 300);
-            desertLight.castShadow = true;
-            scene.add(desertLight);
 
             const controls = new THREE.OrbitControls(camera, canvas);
             controls.target.set(0, 5, 0);
@@ -734,19 +716,42 @@ $(function () {
             // Model loaders
             terrainModel;
             let treeModel;
+            let snowCappedRockMesh;
             // Note the player model is global for now
 
             let terrain = new THREE.GLTFLoader();
             let tree = new THREE.GLTFLoader();
             let playerCart = new THREE.GLTFLoader();
+            let snowCappedRock = new THREE.GLTFLoader();
 
             // Terrain
             terrain.load(MODEL_PATH, function (gltf) {
                 terrainModel = gltf.scene;
-                terrainModel.scale.set(1, 1, 1);
+                terrainModel.scale.set(100, 1, 100);
                 terrainModel.position.set(0, 0, 0);
                 terrainModel.receiveShadow = true;
+                terrainModel.traverse ( ( o ) => {
+                    if ( o.isMesh ) {
+                        o.material.metalness = 0;
+                        o.material.roughness = 100;
+                    }
+                } );
                 scene.add(terrainModel);
+
+                // Snow capped rock
+                snowCappedRock.load(ROCK_PATH, function (gltf) {
+                    snowCappedRockMesh = gltf.scene;
+                    snowCappedRockMesh.scale.set(5, 5, 5);
+                    snowCappedRockMesh.position.set(0, 0, 0);
+                    snowCappedRockMesh.receiveShadow = true;
+                    snowCappedRockMesh.traverse ( ( o ) => {
+                        if ( o.isMesh ) {
+                            o.material.metalness = 0;
+                            o.material.roughness = 100;
+                        }
+                    } );
+                    scene.add(snowCappedRockMesh);
+                }); // Snow capped rock
 
                 // Player cart
                 playerCart.load(PLAYER_PATH, function (gltf) {
@@ -755,6 +760,12 @@ $(function () {
                     playerModel.scale.set(10, 10, 10);
                     playerModel.position.set(0, averageGroundHeight, 0);
                     playerModel.castShadow = true;
+                    playerModel.traverse ( ( o ) => {
+                        if ( o.isMesh ) {
+                            o.material.metalness = 0;
+                            o.material.roughness = 100;
+                        }
+                    });
                     scene.add(playerModel);
                     // Add lantern light to player's cart 
                     // Light as a mechanic
@@ -779,7 +790,6 @@ $(function () {
                     relCameraPos = camera.position.sub(playerModel.position);
                     relCameraPosMag = camera.position.distanceTo(playerModel.position) - 0.5;
                     // Everything has been loaded at this point
-                    let pickHelperGameModels = [];
                     // Add scene meshes to raycasting cache
                     scene.traverse(function(child) {
                         if(child instanceof THREE.Mesh) {
@@ -906,8 +916,6 @@ $(function () {
                             if (otherConnectedPlayers.length <= 0) {
                                 return;
                             }
-                            // console.log("Client: Player with id " + data.myUniquePlayerId + " moved to new position: ");
-                            // console.log(data.desiredPositionGoal);
                             // Update other players if there are any
                             // Search the model associated with that player ID
                             for (let i = 0; i < otherConnectedPlayers.length; i++) {
@@ -974,11 +982,11 @@ $(function () {
                                 let confirmDialogConfig = {
                                     autoOpen: true,
                                     show: {
-                                        effect: "blind",
+                                        effect: "fade",
                                         duration: 500
                                     },
                                     hide: {
-                                        effect: "puff",
+                                        effect: "fade",
                                         duration: 250
                                     },
                                     resizable: true,
@@ -1029,11 +1037,11 @@ $(function () {
                                 let dialogConfig = {
                                     autoOpen: false,
                                     show: {
-                                        effect: "blind",
+                                        effect: "fade",
                                         duration: 500
                                     },
                                     hide: {
-                                        effect: "puff",
+                                        effect: "fade",
                                         duration: 250
                                     },
                                     resizable: true,
@@ -1082,7 +1090,6 @@ $(function () {
                             }); // on click
                             return dialogConfig;
                         }
-
                         socket.on('onBuyItem', function () {
 
                         });
@@ -1125,6 +1132,9 @@ $(function () {
                     $('#contextMenu--select-collect').on("click", function (event) {
                         gatherResource();
                     });
+                    $('#ui-button-inventory').on('click', function(event) {
+                        $('.brokerage-view-container').fadeToggle(300);
+                    });
                     $('#ui-button-manufacture-list').on('click', function(event) {
                         // Prepare the ui
                         $('.ui-manufacture-panel').html("");
@@ -1145,11 +1155,11 @@ $(function () {
                             title: "Solar Manufacturing Queue",
                             autoOpen: true,
                             show: {
-                                effect: "blind",
+                                effect: "fade",
                                 duration: 250
                             },
                             hide: {
-                                effect: "puff",
+                                effect: "fade",
                                 duration: 250
                             },
                             resizable: false,
@@ -1175,7 +1185,7 @@ $(function () {
 
     // factory for resources
     function loadNewResource(loader, resourceScene, PATH, loadConfig) {
-        // console.log(loadConfig);
+        console.log(loadConfig);
         for (let i = 0; i < loadConfig.length; i++) {
             let newResource = loadConfig[i];
             loader.load(PATH, function (gltf) {
@@ -1183,6 +1193,12 @@ $(function () {
                 resourceScene.scale.set(newResource.scale, newResource.scale, newResource.scale);
                 resourceScene.position.set(newResource.position.x, newResource.position.y, newResource.position.z);
                 resourceScene.castShadow = true;
+                resourceScene.traverse ( ( o ) => {
+                    if ( o.isMesh ) {
+                        o.material.metalness = 0;
+                        o.material.roughness = 100;
+                    }
+                });
                 // Override the uuid with the server's
                 // console.log("old resource UUID : " + resourceScene.uuid);
                 resourceScene.uuid = newResource.uuid;
@@ -1243,9 +1259,6 @@ $(function () {
         // Update this player
         if (playerModel && positionGoalProgress && currentWorldPosition) {
             // Camera follow target
-            // TODO fix rotation or use orthographic instead OR first person
-            //temp.set(camera.position.x, camera.position.y, goal.z);
-            //camera.position.lerp(temp, 0.1);
             // Lerp towards the goal 
             positionGoalProgress.lerp(desiredPositionGoal, 0.1);
             // Update current world position
@@ -1253,41 +1266,6 @@ $(function () {
             currentWorldPosition.z = positionGoalProgress.z;
             // Update the model
             playerModel.position.set(currentWorldPosition.x, averageGroundHeight, currentWorldPosition.z);
-            // TODO import three-pathfinding.js (stretch)  
-            // TODO Position on terrain with raycaster
-            // terrainRaycaster.set(playerModel.position, new THREE.Vector3(0, -1, 0));
-            // let intersects = terrainRaycaster.intersectObject(terrainModel);
-            // console.log(intersects[0]);
-            // playerModel.position.y = intersects[0].point.y + 30;
-            // Camera
-            // let standardPos = playerModel.position.add(relCameraPos);
-            // // console.log(standardPos);
-            // let up = new THREE.Vector3(0, 1, 0);
-            // let upScaled = up.multiplyScalar(relCameraPosMag);
-            // let abovePos = playerModel.position.add(upScaled);
-            // // console.log(abovePos);
-            // let checkPoints = [];
-            // delta = clock.getDelta();
-            // //console.log(delta);
-            // checkPoints.push(standardPos);
-            // checkPoints.push(standardPos.lerp(abovePos, 0.0025 * delta));
-            // checkPoints.push(standardPos.lerp(abovePos, 0.0050 * delta));
-            // checkPoints.push(standardPos.lerp(abovePos, 0.0075 * delta));
-            // checkPoints.push(abovePos);
-
-            // console.log(checkPoints[0]);
-            // console.log(checkPoints[1]);
-            // console.log(checkPoints[2]);
-            // console.log(checkPoints[3]);
-            // console.log(checkPoints[4]);
-            // for (let i = 0; i < checkPoints.length; i++) {
-            //     console.log(checkPoints[i].x + " " + checkPoints[i].y + " " + checkPoints[i].z);
-            //     let c = viewingPosCheck(checkPoints[i], playerModel.position);
-            //     console.log(c);
-            //     if (c) {
-            //         break;
-            //     }
-            // }
             // camera.position.lerp(newPos, smooth * delta);
             camera.lookAt(positionGoalProgress);
         }
@@ -1310,9 +1288,6 @@ $(function () {
                 destroyMeshByUUID(uuidToDelete);
                 activeSRIs.splice(i, 1);
                 updateGameModelsCache(uuidToDelete);
-                // for(let i = 0; i < activeSRIs.length; i++) {
-                //     console.log("Sanity check: " + activeSRIs[i].uuid);
-                // }
                 // Emit to others that YOU destroyed that resource
                 socket.emit("onResourceDestroyed", uuidToDelete);
             }
@@ -1374,6 +1349,44 @@ $(function () {
         return true;
     }
 
+    function createBonfire() {
+        let bonfireModel;
+        let bonfire = new THREE.GLTFLoader();
+        let bonfirePosition = playerModel.position;
+        console.log("Creating campfire");
+        bonfire.load(BONFIRE_PATH, function (gltf) {
+            bonfireModel = gltf.scene;
+            bonfireModel.scale.set(50, 50, 50);
+            bonfireModel.position.set(bonfirePosition.x, (bonfirePosition).add(new THREE.Vector3(0, 70, 0)).y, bonfirePosition.z);
+            bonfireModel.receiveShadow = false;
+            bonfireModel.traverse ( ( o ) => {
+                if ( o.isMesh ) {
+                    o.material.metalness = 0;
+                    o.material.roughness = 0;
+                    pickHelperGameModels.push(o);
+                    pickHelper.addToGameModels(o);
+                }
+            } );
+            bonfireModel.uuid = THREE.MathUtils.generateUUID();
+            let bonfireBundle = {
+                type: bonfireModel.name,
+                gltfRef: bonfireModel,
+                uuid: bonfireModel.uuid,
+                position: bonfireModel.position
+            };
+            scene.add(bonfireModel);
+            let bonfireLight = new THREE.PointLight(0xFFFFFF, 30);
+            bonfireLight.power = 5000;
+            bonfireLight.decay = 2;
+            bonfireLight.distance = 1000;
+            bonfireLight.scale.set(50, 50, 50);
+            bonfireLight.position.set(bonfirePosition.x, bonfirePosition.y, bonfirePosition.z);
+            bonfireLight.castShadow = false;
+            scene.add(bonfireLight);
+            bonfireLight.parent = bonfireModel;
+        });
+    }
+
     function smoothLookAt(playerModel) {
         // Create a vector from the camera towards the player.
         let relPlayerPosition = playerModel.position.sub(camera.position);
@@ -1424,7 +1437,7 @@ $(function () {
 
     function setupMusicPlayer() {
         // PLAY MUSIC
-        let ambientMusic = $('#imissU')[0];
+        let ambientMusic = $('#song18')[0];
         if (!ambientMusic.isPlaying) {
             ambientMusic.loop = true;
             ambientMusic.play();

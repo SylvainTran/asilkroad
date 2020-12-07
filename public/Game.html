@@ -29,7 +29,7 @@
 		<!-- <div class="public-explorable-container"> -->
 			<!--Text View -->
 			<main class="explorable-text-view">
-				<h1>Story So Far</h1><br>
+				<h1>Story So Far</h1><hr width=75%><br>
 				<p>This is a world without a sun. The people that survive are the ones who produce light.</p>
 				<p>There is this talk about an artificial sun being built in the city of Pret. The more powerful its light, the more cohabitants this planet can harbour into further generations.</p>			
 				<h4 class="explorable-text-view--update"></h4>
@@ -39,10 +39,11 @@
 			<div class="explorable-graphics-view">
 				<div class="ui--lantern-light-level">2000</div>
 				<div class="ui-buttons">
+					<button class="ui-button" id="ui-button-account">Account</button>
 					<button class="ui-button" id="ui-button-manufacture-list">Manufacturing List</button>
+					<button class="ui-button" id="ui-button-inventory">Inventory</button>
 				</div>
-				<div class="ui-manufacture-panel">
-				</div>
+				<div class="ui-manufacture-panel"></div>
 			</div>
 			<!-- Logistics View -->
 			<div class="brokerage-view-container">
@@ -50,7 +51,7 @@
 				<div id="brokerage-view__content">
 					<div class="brokerage-view__content--tabs">
 						<div class="brokerage-view__content--tabs--nav">
-							<div id="listed-items">Listed Items</div><hr>
+							<div id="listed-items">Brokerage</div><hr>
 						</div>
 					</div>
 					<ul id="brokerage-list"></ul>
@@ -65,13 +66,13 @@
 			</div>
 
 			<!-- Chat View -->
-			<aside class="chat-view-container">
-				<h1 class="chat-view-header">Announcements:</h1>
+			<div class="chat-view-container">
+				<h3 class="chat-view-header">Announcements:</h3>
 				<ul id="messages"></ul>
 				<form id="chat-view-input" action="">
-					<input id="chat-view-inputfield" autocomplete="off" /><button>Send</button>
+					<!-- <input id="chat-view-inputfield" autocomplete="off" /><button>Send</button> -->
 				</form>
-			</aside>
+			</div>
 		<!-- </div> -->
 	<!-- </div> -->
 	<!-- DOM Assets -->

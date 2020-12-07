@@ -1,13 +1,19 @@
 @import "animations.css";
 
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: 'Trirong', serif;
     background-color: rgb(1, 7, 42);
     color: white;
+    /* scrollbar-color: black;
+    scrollbar-track-color: black;
+    scrollbar-3dlight-color: black;
+    scrollbar-highlight-color: black; */
 }
+
 #cart_logo {
     width: 128px;
     height: 128px;
@@ -20,11 +26,12 @@ html, body {
     font-size: 3em;
 }
 
-.public-intro > p {
+.public-intro>p {
     font-size: 0.8em;
 }
 
-.top-nav, .bottom-nav {
+.top-nav,
+.bottom-nav {
     text-align: center;
 }
 
@@ -39,6 +46,32 @@ html, body {
     grid-area: 1/1/2/3;
 }
 
+.ui-dialog-titlebar{
+    font-family: 'Trirong', serif;
+    background-color: #15284d;
+    color: white;
+    text-align: center;
+}
+
+.ui-dialog, #tutorial--container {
+    font-family: 'Trirong', serif;
+    background-color: #15284d;
+    border: none;
+    border-radius: 3%;
+    opacity: 1;
+    color: white;
+    width: auto;
+}
+
+.ui-widget.ui-widget-content, .ui-widget-header, .ui-widget-content {
+    border: none;
+    color: white;
+}
+
+.explorable-text-view--update {
+    text-align: center;
+}
+
 .brokerage-view-container {
     background-color: black;
     color: white;
@@ -49,13 +82,25 @@ html, body {
     position: fixed;
     top: 0;
     right: 0;
+    border-radius: 2%;
+    opacity: 0.3;
 }
 
 #brokerage-view__content {
+    margin: 1.5em 0 1.5em 1.5em;
     display: grid;
     grid-row: 1;
     grid-column: 2;
-    border: 1px solid white;
+    /* border: 1px solid silver; */
+}
+
+.brokerage-view-container:hover {
+    display: grid;
+    grid-row: 1;
+    grid-column: 2;
+    /* border: 1px solid silver; */
+    opacity: 1;
+    /* background-color: #11357e; */
 }
 
 hr.thick {
@@ -63,19 +108,26 @@ hr.thick {
 }
 
 #brokerage-view__inventory {
+    margin: 1.5em;
     display: grid;
     grid-row: 1;
     grid-column: 1;
-    border: 1px solid white;
+    width: 150px;
+    /* border: 1px solid white; */
+}
+
+#brokerage-view__inventory:hover {
+    background-color: hsla(45%, 25%, 35%, 0.5);
 }
 
 .ui--lantern-light-level {
-    font-size: 2em;
+    font-size: 1.5em;
+    padding: 2em;
     display: inline-block;
     z-index: 2;
     position: fixed;
-    top: 0;
-    left: 0;
+    bottom: 0;
+    right: 0;
 }
 
 #graphics-view--canvas {
@@ -91,60 +143,67 @@ hr.thick {
 #contextMenu--select-container {
     display: none;
     position: fixed;
-    padding: 0; 
+    padding: 0;
     margin: 0;
-    background-color: grey;
+    background-color: #15284d;
+    font-family: 'Trirong', serif;
+    text-align: center;
 }
 
-#contextMenu--select-container > div {
+#contextMenu--select-container>div {
     color: white;
-    padding: 0; 
+    padding: 0;
     margin: 0;
+    font-family: 'Trirong', serif;
 }
 
-#inventory-contextMenu--select-container, .ui-dialog-buttonpane {
-    background-color: #3c3a46;
+#inventory-contextMenu--select-container,
+.ui-dialog-buttonpane {
+    background-color: #15284d;
     color: white;
+    font-family: 'Trirong', serif;
 }
 
 #inventory-contextMenu--select-container li {
-    background-color: #3c3a46;
+    background-color: #15284d;
     color: white;
     cursor: pointer;
+    font-family: 'Trirong', serif;
 }
 
 #inventory-contextMenu--select-container li:hover {
     background-color: indianred;
 }
 
-.contextMenu--select-actions > div {
+.contextMenu--select-actions>div {
     padding: 3px;
     cursor: pointer;
+    font-family: 'Trirong', serif;
 }
 
-.contextMenu--select-actions > div:hover, #brokerage-list li:hover, #inventory li:hover {
+.contextMenu--select-actions>div:hover,
+#brokerage-list li:hover,
+#inventory li:hover {
     background-color: indianred;
     color: white;
     cursor: pointer;
 }
 
 .brokerage--empty-listing {
-    background-color: black;
-    color: #2c2b2c;
+    color: #201c3d;
     cursor: default;
 }
 
 .brokerage--with-listing {
-    background-color: #3c3a46;
+    background-color: #11357e;
     color: yellow;
     cursor: pointer;
 }
 
 .explorable-text-view {
-    border: 2px solid black;
     height: 336px;
     width: 377px;
-    background-color: black;
+    background-color: #15284d;
     color: rgb(255, 255, 255);
     overflow: auto;
     z-index: 2;
@@ -153,17 +212,18 @@ hr.thick {
     left: 0;
 }
 
-.explorable-text-view > h4 {
+.explorable-text-view>h4 {
     color: greenyellow;
 }
 
-.explorable-text-view > p, .explorable-text-view > h1 {
+.explorable-text-view>p,
+.explorable-text-view>h1 {
     margin: 0;
-    padding: 0;
+    padding: 1em;
+    text-align: center;
 }
 
 .chat-view-container {
-    border: 2px solid rgb(226, 218, 218);
     background-color: black;
     height: 160px;
     grid-area: 2/1/2/2;
@@ -180,10 +240,12 @@ hr.thick {
 }
 
 .chat-view-header {
+    font-family: 'Trirong', serif;
+    opacity: 1;
     margin: 0;
-    padding: 0;
-    background-color:#7d7d7d;
+    padding: 1em;
     color: white;
+    background-color: black;
 }
 
 #chat-view-input {
@@ -208,22 +270,24 @@ hr.thick {
     margin: 10%;
 }
 
-.narrative, .narrative-interactive {
+.narrative,
+.narrative-interactive {
     text-align: left;
     padding: 50px;
 }
 
-.narrative > h1 {
+.narrative>h1 {
     background-color: pink;
 }
 
-.gather-button, .hunt-button {
+.gather-button,
+.hunt-button {
     margin: 10px;
     background-color: green;
     color: white;
 }
 
-form > input {
+form>input {
     height: 40px;
     width: 90.5%;
     padding-left: 0.5%;
@@ -241,10 +305,6 @@ form button {
     font-weight: bold;
 }
 
-#ui--lantern-light-level {
-
-}
-
 .ui-buttons {
     position: relative;
     z-index: 1;
@@ -256,17 +316,18 @@ form button {
 
 .ui-button {
     display: inline-block;
-}
-
-#ui-button-manufacture-list {
+    font-family: 'Trirong', serif;
+    border: none;
+    background-color: #15284d;
     position: relative;
     z-index: 1;
+    color: white;
 }
 
 .ui-manufacture-panel {
     display: none;
-    background-color: #3c3a46;
-    color: black;
+    border: none;
+    color: white;
     height: 500px;
     width: 500px;
     overflow: auto;
@@ -288,4 +349,33 @@ form button {
     padding: 100px;
     background-color: gray;
     color: white;
+}
+
+::-webkit-scrollbar {
+    background-color: black;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 15px;
+    background-color: #004075;
+    outline: 2px solid black;
+    opacity: 0.3;
+}
+
+::-webkit-scrollbar:horizontal {
+    display: none;
+}
+
+::-webkit-scrollbar:vertical {
+
+}
+
+.ui-dialog-buttonset {
+    text-align: center;
+    display: flex;
 }
