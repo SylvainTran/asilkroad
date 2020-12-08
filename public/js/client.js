@@ -126,12 +126,13 @@ $(function () {
                     // Pass in the point where the ray intersected with the mesh under the mouse cursor to get the move position
                     updatePosition(intersectedObjects[0].point);
                 }
-                if (objectTag === 'tree') {
+                if (objectTag === 'tree' || objectTag === 'adventurerRecruitingTable') {
                     // Open context menu -- the in-game version
                     popContextMenu({
                         event: event,
                         contextMenu: $('#contextMenu--select-container'),
-                        scene: scene
+                        scene: scene,
+                        tag: objectTag
                     });
                 }
             }
@@ -183,7 +184,7 @@ $(function () {
     // Terrain model
     let terrainModel;
     // Average terrain ground height to place models (temporary)
-    const averageGroundHeight = 8;
+    const averageGroundHeight = 1;
 
     // CAMERA
     // Smooth factor
@@ -196,10 +197,11 @@ $(function () {
     let newPos;
 
     // Model paths
-    const MODEL_PATH = '/public/models/terrain_export_0001.glb';
+    const MODEL_PATH = '/public/models/lounge_ops_all_export_0001.glb';
     const TREE_PATH = '/public/models/tree_low_0001_export.glb';
     const PLAYER_PATH = '/public/models/player_cart_0001_export.glb';
     const BONFIRE_PATH = '/public/models/bonfire_export_0003.glb';
+    // const LOUNGE_WALLS_PATH = '/public/models/ops_walls_0001.glb';
     
     // Env. Props
     const ROCK_PATH = '/public/models/rock_export_0001.glb';
@@ -428,6 +430,11 @@ $(function () {
 
     // Pop the in-game context menu
     function popContextMenu(event) {
+        // TODO make this better
+        if(event.tag === 'adventurerRecruitingTable') {
+            $('#contextMenu--select-collect').css("display", "none");
+            $('#contextMenu--select-recruit').css("display", "inline-block");
+        }
         // prevent event bubbling from massive amounts of clicks
         let contextMenu = event.contextMenu[0];
         if (event.event) {
@@ -504,6 +511,64 @@ $(function () {
         if ($('#contextMenu--select-container').css("display") === "block") {
             $('#contextMenu--select-container').css("display", "none");
         }
+    }
+
+    function recruitNewAdventurer(event) {
+        if(!gameData) {
+            return;
+        }                   
+        // Open UI
+        let recruitDialogConfig = {
+            autoOpen: true,
+            show: {
+                effect: "fade",
+                duration: 500
+            },
+            hide: {
+                effect: "fade",
+                duration: 250
+            },
+            resizable: true,
+            height: "auto",
+            width: 400,
+            modal: false,
+            title: "Recruitment Menu",
+            buttons: {
+                // Show list of available server-generated adventurers + remote players?
+                "Show List": function () {                        
+                    let newUniqueId = THREE.MathUtils.generateUUID();
+                    let dataBundle = {
+                        uniquePlayerId: myUniquePlayerId,
+                        metaData: {
+                            timeStamp: Date.now()
+                        }
+                    };
+                    // Get last updated list of adventurers
+                    for(let i = 0; i < gameData.labourResources.length; i++) {
+                        let newLi = $("<li>");
+                        $(newLi).addClass("brokerage-li");
+                        $(newLi).attr('id', newUniqueId);
+                        $(newLi).html(gameData.labourResources[i].name);
+                        // console.log(dataBundle);
+                        $(newLi).on("click", {
+                            event: null,
+                            contextMenu: this,
+                            scene: scene,
+                            item: dataBundle
+                        }, popContextMenuDOM);                                    
+                        $('#ops--recruitment-menu-container').append(newLi);                                          
+                    }
+                    // socket.emit('onRecruitAdventurer', dataBundle);
+                    // $(this).dialog("close");
+                    // $('#inventory-contextMenu--select-container').dialog("close");
+                },
+                Cancel: function () {
+                    $(this).dialog("close");
+                }
+            }
+        };
+
+        $('#ops--recruitment-menu-container').dialog(recruitDialogConfig);
     }
 
     function gatherResource(event) {
@@ -684,28 +749,39 @@ $(function () {
             scene.fog = new THREE.FogExp2(0x25388a, 0.00040);
 
             let d = 8.25;
-            let dirLight = new THREE.DirectionalLight(0x25388a, 0.001);
-            dirLight.position.set(-8, 10, 8);
+            let dirLight = new THREE.DirectionalLight(0x25388a, 1);
+            dirLight.position.set(0, 20, 0);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize = new THREE.Vector2(2048, 2048);
-            dirLight.shadow.camera.near = 0.1;
-            dirLight.shadow.camera.far = 1500;
-            dirLight.shadow.camera.left = d * -1;
-            dirLight.shadow.camera.right = d;
-            dirLight.shadow.camera.top = d;
-            dirLight.shadow.camera.bottom = d * -1;
+            dirLight.shadow.mapSize.width = 1024; 
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 800;
+            // dirLight.shadow.camera.left = d * -1;
+            // dirLight.shadow.camera.right = d;
+            // dirLight.shadow.camera.top = d;
+            // dirLight.shadow.camera.bottom = d * -1;
             // Add directional Light to scene
             scene.add(dirLight);
+
+            const helper = new THREE.DirectionalLightHelper( dirLight, 5 );
+            scene.add( helper );
+
+            let ambientLight = new THREE.AmbientLight(0xd6701c, 1.5);
+            ambientLight.position.set(0, 0, 0);
+            scene.add(ambientLight);
 
             const controls = new THREE.OrbitControls(camera, canvas);
             controls.target.set(0, 5, 0);
             controls.minPolarAngle = -45;
             controls.maxPolarAngle = Math.PI / 2; // Cannot rotate below pi/2 rad
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
+            controls.dampingFactor = 0.25;
+            controls.minDistance = 50;
+            controls.maxDistance = 800;
             // controls.minAzimuthAngle = -1 * 2 * Math.PI; // radians
             // controls.maxAzimuthAngle = 2 * Math.PI; // radians
-            controls.enablePan = false;
+            controls.enablePan = true;
             controls.enableZoom = true;
             controls.update();
 
@@ -715,19 +791,14 @@ $(function () {
 
             // Model loaders
             terrainModel;
-            let treeModel;
-            let snowCappedRockMesh;
-            // Note the player model is global for now
 
             let terrain = new THREE.GLTFLoader();
-            let tree = new THREE.GLTFLoader();
             let playerCart = new THREE.GLTFLoader();
-            let snowCappedRock = new THREE.GLTFLoader();
 
             // Terrain
             terrain.load(MODEL_PATH, function (gltf) {
                 terrainModel = gltf.scene;
-                terrainModel.scale.set(100, 1, 100);
+                terrainModel.scale.set(1, 1, 1);
                 terrainModel.position.set(0, 0, 0);
                 terrainModel.receiveShadow = true;
                 terrainModel.traverse ( ( o ) => {
@@ -736,28 +807,13 @@ $(function () {
                         o.material.roughness = 100;
                     }
                 } );
-                scene.add(terrainModel);
-
-                // Snow capped rock
-                snowCappedRock.load(ROCK_PATH, function (gltf) {
-                    snowCappedRockMesh = gltf.scene;
-                    snowCappedRockMesh.scale.set(5, 5, 5);
-                    snowCappedRockMesh.position.set(0, 0, 0);
-                    snowCappedRockMesh.receiveShadow = true;
-                    snowCappedRockMesh.traverse ( ( o ) => {
-                        if ( o.isMesh ) {
-                            o.material.metalness = 0;
-                            o.material.roughness = 100;
-                        }
-                    } );
-                    scene.add(snowCappedRockMesh);
-                }); // Snow capped rock
+                scene.add(terrainModel);        
 
                 // Player cart
                 playerCart.load(PLAYER_PATH, function (gltf) {
 
                     playerModel = gltf.scene;
-                    playerModel.scale.set(10, 10, 10);
+                    playerModel.scale.set(1, 1, 1);
                     playerModel.position.set(0, averageGroundHeight, 0);
                     playerModel.castShadow = true;
                     playerModel.traverse ( ( o ) => {
@@ -772,7 +828,7 @@ $(function () {
                     lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
                     lanternLight.power = 2000;
                     lanternLight.decay = 1.5;
-                    lanternLight.distance = 300;
+                    lanternLight.distance = 150;
                     lanternLight.scale.set(1, 1, 1);
                     lanternLight.position.set(0, 2, 0);
                     lanternLight.castShadow = true;
@@ -806,7 +862,7 @@ $(function () {
                     // myUniquePlayerId = new Hashes.SHA256().hex(randomString); // uniquePlayerId used to let the server and other players know who this unique entity is
                     myUniquePlayerId = THREE.MathUtils.generateUUID();
                     const loadConfig = {
-                        scale: 10,
+                        scale: 1,
                         uniquePlayerId: null,
                         playerModel: null,
                         position: null
@@ -867,7 +923,7 @@ $(function () {
                                 // Pop-up tutorial
                                 $('#tutorial--container').html("");
                                 let p = $("<p>");
-                                let tutorialText = "<em>Welcome to asilkroad online, <strong>brave adventurer</strong>.<br><br>\"Looking good. What? My name, you ask?<br><br>...They call me 'Old Turtle' around here, probably because I'm old and slow. Very old. Just call me what you want, okay? I will be your guide for now. Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br><strong>Find a tree</strong>, and choose <strong>'Collect'</strong> to continue.";
+                                let tutorialText = "<em>Welcome to the Lounge, <strong>brave Guild Master</strong>.<br><br>\"What? Who am I, you ask?<br><br>...They call me 'Old Man' around here, probably because I'm old. Very old. Just call me what you want, okay? Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br><strong>Find a tree</strong>, and choose <strong>'Collect'</strong> to continue.";
                                 p.append(tutorialText);
                                 $('#tutorial--container').html(tutorialText);
                                 $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
@@ -1131,6 +1187,9 @@ $(function () {
                     // Attach a once event on the action 
                     $('#contextMenu--select-collect').on("click", function (event) {
                         gatherResource();
+                    });
+                    $('#contextMenu--select-recruit').on("click", function (event) {
+                        recruitNewAdventurer();
                     });
                     $('#ui-button-inventory').on('click', function(event) {
                         $('.brokerage-view-container').fadeToggle(300);

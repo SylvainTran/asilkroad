@@ -157,6 +157,10 @@ hr.thick {
     font-family: 'Trirong', serif;
 }
 
+#contextMenu--select-recruit {
+    display: none;    
+}
+
 #inventory-contextMenu--select-container,
 .ui-dialog-buttonpane {
     background-color: #15284d;

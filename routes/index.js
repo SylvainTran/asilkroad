@@ -8,6 +8,8 @@
 //
 // THREE.js
 global.THREE = require("three");
+const { uniqueNamesGenerator, adjectives, colors, animals } = require('unique-names-generator');
+
 // require("three/examples/js/loaders/GLTFLoader");
 
 // SERVER:
@@ -834,13 +836,19 @@ console.log("Emit created new game with game room id: " + newGameId);
 
 function getHostGameModel() {
     let _brokerage = JSON.stringify(Array.from(brokerage));
+    // console.log(_brokerage);
+    // Setup list of adventurers
+    for(let i = 0; i < LABOUR_RESOURCES.length; i++) {
+        const randomName = uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] }); // big_red_donkey
+        LABOUR_RESOURCES[i].name = randomName;
+    }
 
-    console.log(_brokerage);
     return {
         'gameId': newGameId,
         'rawResources': RAW_RESOURCES,
         'labourResources': LABOUR_RESOURCES,
-        'brokerage': _brokerage
+        'brokerage': _brokerage,
+        'LABOUR_RESOURCES': LABOUR_RESOURCES
     }
 }
 
