@@ -434,6 +434,9 @@ $(function () {
         if(event.tag === 'adventurerRecruitingTable') {
             $('#contextMenu--select-collect').css("display", "none");
             $('#contextMenu--select-recruit').css("display", "inline-block");
+        } else {
+            $('#contextMenu--select-collect').css("display", "inline-block");
+            $('#contextMenu--select-recruit').css("display", "none");
         }
         // prevent event bubbling from massive amounts of clicks
         let contextMenu = event.contextMenu[0];
