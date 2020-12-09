@@ -743,7 +743,7 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
     // RESOURCE PATHS FOR GENERATION
     const TREE_PATH = '/public/models/tree_low_0001_export.glb';
     const MAX_ACTIVE_SRI = 5;
-    const maxRange = 250;
+    const maxRange = 100;
 
     switch (cycleTick) {
         case "hourly":
@@ -805,7 +805,7 @@ Server.LogicController.CycleEvents = function (ServerModelCycleSettings) {
                     for(let i = 0; i < randResCount; i++) {
                         let newResourceUUID = THREE.MathUtils.generateUUID();
                         let loadConfig = {
-                            scale: 1,
+                            scale: 0.5,
                             position: new THREE.Vector3(THREE.MathUtils.randInt(-maxRange, maxRange), 0, THREE.MathUtils.randInt(-maxRange, maxRange)), // TODO defined places on the map read from file
                             type: resourceType,
                             uuid: newResourceUUID,

@@ -12,6 +12,8 @@ $(function () {
     let speed = 2;
     let delta = 0;
     let player; // client player instance
+    // Fireplace model
+    let fireplaceModel;
     // Actual progression
     let progression = {
         tutorials: {
@@ -37,7 +39,7 @@ $(function () {
         }
         // Public methods
         getLanternLight() {
-            return this.lanternLight; 
+            return this.lanternLight;
         }
         // Sets the player's lantern light values
         setPlayerLanternLightValues(power, decay, distance) {
@@ -46,10 +48,10 @@ $(function () {
             this.lanternLight.distance = distance;
         }
         updatePlayerLanternLightValues(delta) {
-            this.lanternLight.power -= (1/(1-0.5)) * delta * 10;
+            this.lanternLight.power -= (1 / (1 - 0.5)) * delta * 10;
             this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
             // Update UI 
-            $('.ui--lantern-light-level').html("Oil Strength: " + Math.floor(this.lanternLight.power));
+            $('.ui--lantern-light-level').html("Fireplace Strength: " + Math.floor(this.lanternLight.power));
         }
         playerFeedLanternLight(item) {
             // console.log(item);
@@ -95,7 +97,7 @@ $(function () {
             //     console.log("Game model UUID: " + this.gameModels[i].parent.parent.uuid);
             // }
             if (intersectedObjects.length) {
-                if(intersectedObjects[0].object === null) return;
+                if (intersectedObjects[0].object === null) return;
                 // pick the first object. It's the closest one
                 this.pickedObject = intersectedObjects[0].object;
                 // using the global objectTag for now
@@ -197,14 +199,14 @@ $(function () {
     let newPos;
 
     // Model paths
-    const MODEL_PATH = '/public/models/lounge_ops_all_export_0001.glb';
+    const MODEL_PATH = '/public/models/lounge_ops_all_export_0003.glb';
     const TREE_PATH = '/public/models/tree_low_0001_export.glb';
     const PLAYER_PATH = '/public/models/player_cart_0001_export.glb';
     const BONFIRE_PATH = '/public/models/bonfire_export_0003.glb';
-    // const LOUNGE_WALLS_PATH = '/public/models/ops_walls_0001.glb';
-    
+    const FIREPLACE_PATH = '/public/models/fireplace_export_0002.glb';
+
     // Env. Props
-    const ROCK_PATH = '/public/models/rock_export_0001.glb';
+
 
     // Three.js variables
     let camera;
@@ -243,17 +245,6 @@ $(function () {
         socket.emit('emitPlayerChangeWorldPosition', dataPacket);
         // Play sound FX
         playSound("#playerMove");
-        // // Update camera
-        // let distToPlayer = playerModel.position.distanceTo(camera.position);
-        // if(distToPlayer >= 150) {
-        //     let newCamPos = playerModel.position.sub(new THREE.Vector3(distToPlayer,25,distToPlayer));
-        //     camera.position.lerp(newCamPos, 0.25);
-        //     let q = new THREE.Quaternion();
-        //     //
-        //     let rotation = THREE.MathUtils.setQuaternionFromProperEuler();
-        // } else {
-        //     camera.lookAt(playerModel.position);
-        // }
         // TODO import three-pathfinding.js (stretch)  
     }
 
@@ -274,7 +265,7 @@ $(function () {
             modal: false,
             title: "Confirm Manufacture?",
             buttons: {
-                "Confirm": function () {    
+                "Confirm": function () {
                     // Match with produce that was passed in data                    
                     let produce = $(this).data('produce'); // a string
                     // Pass this request about what to manufacture to the factory
@@ -344,7 +335,7 @@ $(function () {
     // Pop the DOM context menu
     function popContextMenuDOM(event) {
         // Tutorial -- TODO UX, embed and play small video of gameplay tutorial
-        if(!progression.tutorials.brokerageActions) {
+        if (!progression.tutorials.brokerageActions) {
             // Pop-up tutorial
             $('#tutorial--container').html("");
             let p = $("<p>");
@@ -352,7 +343,11 @@ $(function () {
             p.append(tutorialText);
             $('#tutorial--container').html(tutorialText);
             $('#tutorial--container').dialog({
-                position: { my: "center top", at: "center top", of: window }
+                position: {
+                    my: "center top",
+                    at: "center top",
+                    of: window
+                }
             });
             progression.tutorials.brokerageActions = true;
         }
@@ -383,13 +378,12 @@ $(function () {
                     player.manufactureItem(event.data.item);
                     $(this).dialog("close");
                 },
-                "Consume (permanent)": function () {
+                "Stoke Fireplace": function () {
                     player.playerFeedLanternLight(event.data.item);
                     removeFromInventory(event.data.item);
                     $(this).dialog("close");
                 },
-                "Create campfire": function() {
-                    // HERE
+                "Create campfire": function () {
                     // instantiate a pre-designed campfire asset
                     createBonfire();
                     $(this).dialog("close");
@@ -413,13 +407,19 @@ $(function () {
     // This sends the selected inventory item to the brokerage
     function tradeToBroker(item) {
         // Tutorial
-        if(!progression.tutorials.brokerageActions2) {
+        if (!progression.tutorials.brokerageActions2) {
             $('#tutorial--container').html("");
             let p = $("<p>");
             let tutorialText = "Congratulations, you've just posted your first item on the brokerage. Now, let's try buying it back. Scroll down the list and find 'wood'. Click on it to trigger the buy menu.";
             p.append(tutorialText);
             $('#tutorial--container').html(tutorialText);
-            $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
+            $('#tutorial--container').dialog({
+                position: {
+                    my: "center top",
+                    at: "center top",
+                    of: window
+                }
+            });
             progression.tutorials.brokerageActions2 = true;
         }
         // emit onSellItem to server
@@ -431,7 +431,7 @@ $(function () {
     // Pop the in-game context menu
     function popContextMenu(event) {
         // TODO make this better
-        if(event.tag === 'adventurerRecruitingTable') {
+        if (event.tag === 'adventurerRecruitingTable') {
             $('#contextMenu--select-collect').css("display", "none");
             $('#contextMenu--select-recruit').css("display", "inline-block");
         } else {
@@ -517,9 +517,9 @@ $(function () {
     }
 
     function recruitNewAdventurer(event) {
-        if(!gameData) {
+        if (!gameData) {
             return;
-        }                   
+        }
         // Open UI
         let recruitDialogConfig = {
             autoOpen: true,
@@ -538,7 +538,7 @@ $(function () {
             title: "Recruitment Menu",
             buttons: {
                 // Show list of available server-generated adventurers + remote players?
-                "Show List": function () {                        
+                "Show List": function () {
                     let newUniqueId = THREE.MathUtils.generateUUID();
                     let dataBundle = {
                         uniquePlayerId: myUniquePlayerId,
@@ -547,7 +547,7 @@ $(function () {
                         }
                     };
                     // Get last updated list of adventurers
-                    for(let i = 0; i < gameData.labourResources.length; i++) {
+                    for (let i = 0; i < gameData.labourResources.length; i++) {
                         let newLi = $("<li>");
                         $(newLi).addClass("brokerage-li");
                         $(newLi).attr('id', newUniqueId);
@@ -558,8 +558,8 @@ $(function () {
                             contextMenu: this,
                             scene: scene,
                             item: dataBundle
-                        }, popContextMenuDOM);                                    
-                        $('#ops--recruitment-menu-container').append(newLi);                                          
+                        }, popContextMenuDOM);
+                        $('#ops--recruitment-menu-container').append(newLi);
                     }
                     // socket.emit('onRecruitAdventurer', dataBundle);
                     // $(this).dialog("close");
@@ -580,14 +580,20 @@ $(function () {
             return;
         }
         // Tutorial
-        if(!progression.tutorials.inventoryActions) {
+        if (!progression.tutorials.inventoryActions) {
             // Pop-up tutorial
             $('#tutorial--container').html("");
             let p = $("<p>");
             let tutorialText = "Well done! You have a great talent inside. Now that you have a resource, left click on it in the inventory to open the inventory context menu.";
             p.append(tutorialText);
             $('#tutorial--container').html(tutorialText);
-            $('#tutorial--container').dialog({position: { my: "center top", at: "center top", of: window }});
+            $('#tutorial--container').dialog({
+                position: {
+                    my: "center top",
+                    at: "center top",
+                    of: window
+                }
+            });
             progression.tutorials.inventoryActions = true;
         }
         console.log('collecting a resource');
@@ -666,48 +672,49 @@ $(function () {
         init();
         // Draggable and resizable UI 
         $(".brokerage-view-container").resizable({
-            start: function(event, ui) {
+            start: function (event, ui) {
                 ui.element.draggable("disable");
             },
-            stop: function(event, ui) {
+            stop: function (event, ui) {
                 ui.element.draggable("enable");
             },
             handles: "n, e, s, w"
         });
         $(".explorable-text-view").resizable({
-            start: function(event, ui) {
+            start: function (event, ui) {
                 ui.element.draggable("disable");
             },
-            stop: function(event, ui) {
+            stop: function (event, ui) {
                 ui.element.draggable("enable");
             },
             handles: "n, e, s, w"
         });
         $(".chat-view-container").resizable({
-            start: function(event, ui) {
+            start: function (event, ui) {
                 ui.element.draggable("disable");
             },
-            stop: function(event, ui) {
+            stop: function (event, ui) {
                 ui.element.draggable("enable");
             },
             handles: "n, e, s, w"
         });
-        $(".brokerage-view-container" ).draggable();
+        $(".brokerage-view-container").draggable();
         $(".chat-view-container").draggable();
         $(".explorable-text-view").draggable();
-        function init() {           
+
+        function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(backgroundColor);
 
             // Override for logger
             scene.toString = function sceneToString() {
                 let ret;
-                for(let i = 0; i < this.children.length; i++) {
+                for (let i = 0; i < this.children.length; i++) {
                     ret = 'UUID: ' + this.children[i].uuid;
                 }
                 return ret;
             }
-    
+
             // Init the renderer
             renderer = new THREE.WebGLRenderer({
                 canvas,
@@ -729,7 +736,7 @@ $(function () {
             camera.position.z = 91;
             camera.position.x = 89;
             camera.position.y = 142;
-            
+
             // Camera helper
             // const helper = new THREE.CameraHelper(camera);
             // scene.add(helper);
@@ -752,25 +759,25 @@ $(function () {
             scene.fog = new THREE.FogExp2(0x25388a, 0.00040);
 
             let d = 8.25;
-            let dirLight = new THREE.DirectionalLight(0x25388a, 1);
+            let dirLight = new THREE.DirectionalLight(0x25388a, 0.001);
             dirLight.position.set(0, 20, 0);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize = new THREE.Vector2(2048, 2048);
-            dirLight.shadow.mapSize.width = 1024; 
+            dirLight.shadow.mapSize.width = 1024;
             dirLight.shadow.mapSize.height = 1024;
             dirLight.shadow.camera.near = 0.5;
             dirLight.shadow.camera.far = 800;
-            // dirLight.shadow.camera.left = d * -1;
-            // dirLight.shadow.camera.right = d;
-            // dirLight.shadow.camera.top = d;
-            // dirLight.shadow.camera.bottom = d * -1;
+            dirLight.shadow.camera.left = d * -1;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = d * -1;
             // Add directional Light to scene
             scene.add(dirLight);
 
-            const helper = new THREE.DirectionalLightHelper( dirLight, 5 );
-            scene.add( helper );
+            // const helper = new THREE.DirectionalLightHelper( dirLight, 5 );
+            // scene.add( helper );
 
-            let ambientLight = new THREE.AmbientLight(0xd6701c, 1.5);
+            let ambientLight = new THREE.AmbientLight(0xd6701c, 0.025);
             ambientLight.position.set(0, 0, 0);
             scene.add(ambientLight);
 
@@ -781,7 +788,7 @@ $(function () {
             controls.enableDamping = true;
             controls.dampingFactor = 0.25;
             controls.minDistance = 50;
-            controls.maxDistance = 800;
+            controls.maxDistance = 200;
             // controls.minAzimuthAngle = -1 * 2 * Math.PI; // radians
             // controls.maxAzimuthAngle = 2 * Math.PI; // radians
             controls.enablePan = true;
@@ -793,10 +800,9 @@ $(function () {
             pmremGenerator.compileEquirectangularShader();
 
             // Model loaders
-            terrainModel;
-
             let terrain = new THREE.GLTFLoader();
             let playerCart = new THREE.GLTFLoader();
+            let fireplaceLoader = new THREE.GLTFLoader();
 
             // Terrain
             terrain.load(MODEL_PATH, function (gltf) {
@@ -804,442 +810,462 @@ $(function () {
                 terrainModel.scale.set(1, 1, 1);
                 terrainModel.position.set(0, 0, 0);
                 terrainModel.receiveShadow = true;
-                terrainModel.traverse ( ( o ) => {
-                    if ( o.isMesh ) {
+                terrainModel.traverse((o) => {
+                    if (o.isMesh) {
                         o.material.metalness = 0;
                         o.material.roughness = 100;
                     }
-                } );
-                scene.add(terrainModel);        
+                });
+                scene.add(terrainModel);
 
                 // Player cart
                 playerCart.load(PLAYER_PATH, function (gltf) {
 
                     playerModel = gltf.scene;
-                    playerModel.scale.set(1, 1, 1);
+                    playerModel.scale.set(5, 5, 5);
                     playerModel.position.set(0, averageGroundHeight, 0);
                     playerModel.castShadow = true;
-                    playerModel.traverse ( ( o ) => {
-                        if ( o.isMesh ) {
+                    playerModel.traverse((o) => {
+                        if (o.isMesh) {
                             o.material.metalness = 0;
                             o.material.roughness = 100;
                         }
                     });
                     scene.add(playerModel);
-                    // Add lantern light to player's cart 
-                    // Light as a mechanic
-                    lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
-                    lanternLight.power = 2000;
-                    lanternLight.decay = 1.5;
-                    lanternLight.distance = 150;
-                    lanternLight.scale.set(1, 1, 1);
-                    lanternLight.position.set(0, 2, 0);
-                    lanternLight.castShadow = true;
-                    scene.add(lanternLight);
-                    lanternLight.parent = playerModel;
+                    // Fireplace
+                    fireplaceLoader.load(FIREPLACE_PATH, function (gltf) {
+                        fireplaceModel = gltf.scene;
+                        fireplaceModel.scale.set(1, 1, 1);
+                        fireplaceModel.position.set(0, averageGroundHeight, 0);
+                        fireplaceModel.castShadow = true;
+                        scene.add(fireplaceModel);
+                        // Add lantern light to player's cart 
+                        // Light as a mechanic
+                        lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
+                        lanternLight.power = 2000;
+                        lanternLight.decay = 1.5;
+                        lanternLight.distance = 150;
+                        lanternLight.scale.set(1, 1, 1);
+                        lanternLight.position.set(15, 3, 44);
+                        lanternLight.castShadow = true;
+                        scene.add(lanternLight);
+                        lanternLight.parent = fireplaceModel;
 
-                    // Create the player
-                    player = new Player(lanternLight); 
+                        // Create the player
+                        player = new Player(lanternLight);
 
-                    // TODO terrain raycaster
-                    terrainRaycaster = new THREE.Raycaster();
-                    terrainRaycaster.set(playerModel.position, new THREE.Vector3(0, -1, 0));
+                        // TODO terrain raycaster
+                        terrainRaycaster = new THREE.Raycaster();
+                        terrainRaycaster.set(playerModel.position, new THREE.Vector3(0, -1, 0));
 
-                    // Camera follow setup
-                    relCameraPos = camera.position.sub(playerModel.position);
-                    relCameraPosMag = camera.position.distanceTo(playerModel.position) - 0.5;
-                    // Everything has been loaded at this point
-                    // Add scene meshes to raycasting cache
-                    scene.traverse(function(child) {
-                        if(child instanceof THREE.Mesh) {
-                            pickHelperGameModels.push(child);
-                        }
-                    });
-                    pickHelper.setGameModels(pickHelperGameModels);
-                    // SERVER CODE
-                    //
-                    // Client-side network controller
-                    // Each client has their own socket, which the server can listen to
-                    socket = io(); // client connection socket
-                    //const randomString = Math.random().toString(36).replace(/[^a-z]+/g, ''); // Used for generating uniquePlayerId
-                    // myUniquePlayerId = new Hashes.SHA256().hex(randomString); // uniquePlayerId used to let the server and other players know who this unique entity is
-                    myUniquePlayerId = THREE.MathUtils.generateUUID();
-                    const loadConfig = {
-                        scale: 1,
-                        uniquePlayerId: null,
-                        playerModel: null,
-                        position: null
-                    }; // Model loader config 
-                    // Confirm before leaving page
-                    // $(window).bind("beforeunload", function (e) {
-                    //     return "Do you really want to leave the game?";
-                    // })
-                    // Disconnect event
-                    socket.on('disconnect', function () {
-                        otherConnectedPlayers = [];
-                    });
-                    socket.on('connect', function (data) {
-                        // Join and send the playerModel for others to see
-                        // PASS THE UNIQUE ID TOO
-                        socket.emit('join', {
-                            playerModel: playerModel,
-                            position: playerModel.position,
-                            uniquePlayerId: myUniquePlayerId
-                        });
-
-                        // Initial handshake => Backwards update for older avatars that were already instantiated
-                        socket.on('joinedClientId', function (data) {
-                            // cache id
-                            socketId = data.clientId;
-                            // Cache the game data
-                            gameData = data.gameData;
-                            // Init inventory (from database)
-                            // initInventory();            
-                            // Send older avatars
-                            // If the ids are differnt than this client id, load their model and last position
-                            for (let i = 0; i < data.olderAvatars.length; i++) {
-                                if (data.olderAvatars[i].data.uniquePlayerId !== myUniquePlayerId) { // load
-                                    loadConfig.uniquePlayerId = data.olderAvatars[i].data.uniquePlayerId;
-                                    loadConfig.playerModel = data.olderAvatars[i].data.playerModel;
-                                    loadConfig.position = data.olderAvatars[i].data.position;
-                                    loadNewAvatar(PLAYER_PATH, loadConfig);
-                                }
-                            }
-                            // Create current brokerage
-                            // Refresh view
-                            // Cache brokerage
-                            $('#brokerage-list').html('');
-                            brokerage = new Map(JSON.parse(gameData.brokerage));
-                            let content, newLi;
-                            brokerage.forEach((item, info) => {
-                                content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
-                                newLi = $('<li>');
-                                updateBrokerageView(item, info, newLi);
-                                $('#brokerage-list').append($(newLi).text(content));
-                            });
-                            // Create current active SRI                            
-                            let loader = new THREE.GLTFLoader();
-                            let resourceScene;
-                            loadNewResource(loader, resourceScene, TREE_PATH, data.activeSRI);    
-                            // Check progression for tutorial status
-                            if(!progression.tutorials.resourceCollectionActions) {
-                                // Pop-up tutorial
-                                $('#tutorial--container').html("");
-                                let p = $("<p>");
-                                let tutorialText = "<em>Welcome to the Lounge, <strong>brave Guild Master</strong>.<br><br>\"What? Who am I, you ask?<br><br>...They call me 'Old Man' around here, probably because I'm old. Very old. Just call me what you want, okay? Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br><strong>Find a tree</strong>, and choose <strong>'Collect'</strong> to continue.";
-                                p.append(tutorialText);
-                                $('#tutorial--container').html(tutorialText);
-                                $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
-                                progression.tutorials.resourceCollectionActions = true;
+                        // Camera follow setup
+                        relCameraPos = camera.position.sub(playerModel.position);
+                        relCameraPosMag = camera.position.distanceTo(playerModel.position) - 0.5;
+                        // Everything has been loaded at this point
+                        // Add scene meshes to raycasting cache
+                        scene.traverse(function (child) {
+                            if (child instanceof THREE.Mesh) {
+                                pickHelperGameModels.push(child);
                             }
                         });
-                        //load others avatar
-                        socket.on('newAvatarInWorld', function (avatar) {
-                            const parsedAvatar = JSON.parse(avatar.data);
-                            // update load config
-                            loadConfig.uniquePlayerId = parsedAvatar.uniquePlayerId;
-                            loadConfig.playerModel = parsedAvatar.playerModel;
-                            loadConfig.position = parsedAvatar.position;
-                            // Clone the avatar first in an instance of THREE.Object3D
-                            loadNewAvatar(PLAYER_PATH, loadConfig);
-                            // Alert the others
-                            socket.emit('chat message', "A new player entered the game.");
-                        });
-                        // Update connected avatars on request
-                        socket.on('updatedConnectedAvatars', function (data) {
-                            // Search for any differences 
-                            // in the currently active scene models
-                            let uuidToDelete = data.disconnectedPlayerId;
-                            for (let i = 0; i < otherConnectedPlayers.length; i++) {
-                                if (otherConnectedPlayers[i].uniquePlayerId === uuidToDelete) {
-                                    // console.log(otherConnectedPlayers[i].gltfRef.uuid);
-                                    // console.log("DELETING DISCONNECTED PLAYER");
-                                    for (let j = 0; j < scene.children.length; j++) {
-                                        // console.log("UUID " + scene.children[j].uuid);
-                                        if (scene.children[j].uuid === otherConnectedPlayers[i].gltfRef.uuid) {
-                                            let meshes = scene.children[j].children[0].children;
-                                            console.log(meshes);
-                                            for (let k = 0; k < meshes.length; k++) {
-                                                meshes[k].geometry.dispose();
-                                                meshes[k].material.dispose();
-                                                scene.remove(meshes[k].parent.parent); // Mesh -> Group -> glTF scene object
-                                                renderer.dispose();
-                                            }
-                                        }
-                                    }
-                                    otherConnectedPlayers.splice(i, 1);
-                                }
-                            }
-                        });
-                        socket.on('emitToOtherPlayersChangedWorldPosition', function (data) {
-                            if (otherConnectedPlayers.length <= 0) {
-                                return;
-                            }
-                            // Update other players if there are any
-                            // Search the model associated with that player ID
-                            for (let i = 0; i < otherConnectedPlayers.length; i++) {
-                                if (otherConnectedPlayers[i].uniquePlayerId === data.myUniquePlayerId) {
-                                    // Append update new movementData packet, render() will handle the rest?
-                                    otherConnectedPlayers[i].movementData = data;
-                                }
-                            }
-                            // Update all players' position
-                            for (let i = 0; i < otherConnectedPlayers.length; i++) {
-                                let otherCurrentPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.positionGoalProgress.x, otherConnectedPlayers[i].movementData.positionGoalProgress.y, otherConnectedPlayers[i].movementData.positionGoalProgress.z);
-                                let otherGoalPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.desiredPositionGoal.x, otherConnectedPlayers[i].movementData.desiredPositionGoal.y, otherConnectedPlayers[i].movementData.desiredPositionGoal.z);
-                                // Lerp towards the goal 
-                                otherCurrentPos.lerp(otherGoalPos, 0.1);
-                                // Update the model
-                                let otherPlayerModel = otherConnectedPlayers[i].gltfRef;
-                                // console.log(otherPlayerModel);
-                                otherPlayerModel.position.set(otherCurrentPos.x, averageGroundHeight, otherCurrentPos.z);
-                                playSound("#otherPlayerMove");
-                            }
-                        });
-                        // Error handling
-                        socket.on('connect_error', (error) => {
-                            console.log("connectionError");
-                            // TODO					
-                        });
-                        // When browser launches, fetch any room ids from host
-                        socket.emit("fetchGameId");
-                        // on new game created
-                        socket.on('fetchGameIdResponse', function (data) {
-                            console.log("Game room: " + data);
-                        });
-                        // GAME 
+                        pickHelper.setGameModels(pickHelperGameModels);
+                        // SERVER CODE
                         //
-                        // DATA
-                        socket.on('getGameData', function (data) {
-
+                        // Client-side network controller
+                        // Each client has their own socket, which the server can listen to
+                        socket = io(); // client connection socket
+                        //const randomString = Math.random().toString(36).replace(/[^a-z]+/g, ''); // Used for generating uniquePlayerId
+                        // myUniquePlayerId = new Hashes.SHA256().hex(randomString); // uniquePlayerId used to let the server and other players know who this unique entity is
+                        myUniquePlayerId = THREE.MathUtils.generateUUID();
+                        const loadConfig = {
+                            scale: 5,
+                            uniquePlayerId: null,
+                            playerModel: null,
+                            position: null
+                        }; // Model loader config 
+                        // Confirm before leaving page
+                        // $(window).bind("beforeunload", function (e) {
+                        //     return "Do you really want to leave the game?";
+                        // })
+                        // Disconnect event
+                        socket.on('disconnect', function () {
+                            otherConnectedPlayers = [];
                         });
-                        socket.on('onRefreshBrokerage', function (updatedBrokerage) {
-                            // Recreate a map for the brokerage
-                            brokerage = new Map(JSON.parse(updatedBrokerage));
-                            // Refresh view
-                            $('#brokerage-list').html('');
-                            let content, newLi;
-                            brokerage.forEach((item, info) => {
-                                content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
-                                newLi = $('<li>');
-                                updateBrokerageView(item, info, newLi);
-                                $('#brokerage-list').append($(newLi).text(content));
+                        socket.on('connect', function (data) {
+                            // Join and send the playerModel for others to see
+                            // PASS THE UNIQUE ID TOO
+                            socket.emit('join', {
+                                playerModel: playerModel,
+                                position: playerModel.position,
+                                uniquePlayerId: myUniquePlayerId
                             });
-                        });
 
-                        function updateBrokerageView(item, info, component) {
-                            let dialogConfig;
-                            $(component).addClass("brokerage-li");
-                            // Add greyed out look if no seller 
-                            if (item.sellerIds.length <= 0) {
-                                $(component).addClass("brokerage--empty-listing");
-                            } else {
-                                $(component).addClass("brokerage--with-listing");
-                            }
-                            $(component).on('click', function () {
-                                $('#inventory-contextMenu--select-container').html("");
-                                let confirmDialogConfig = {
-                                    autoOpen: true,
-                                    show: {
-                                        effect: "fade",
-                                        duration: 500
-                                    },
-                                    hide: {
-                                        effect: "fade",
-                                        duration: 250
-                                    },
-                                    resizable: true,
-                                    height: "auto",
-                                    width: 400,
-                                    modal: false,
-                                    title: "Confirm Purchase?",
-                                    buttons: {
-                                        "Confirm": function () {                        
-                                            let newUniqueId = THREE.MathUtils.generateUUID();
-                                            let dataBundle = {
-                                                uniquePlayerId: myUniquePlayerId,
-                                                name: info,
-                                                info: {
-                                                    item: item,
-                                                    uniqueId: newUniqueId,
-                                                    qty: 1
-                                                },
-                                                metaData: {
-                                                    sellerId: $(this).data('sellerId'),
-                                                    timeStamp: Date.now()
-                                                }
-                                            };
-                                            socket.emit('onBuyItem', dataBundle);
-                                            // Get item
-                                            console.log(item);
-                                            console.log(info);
-                                            let newLi = $("<li>");
-                                            $(newLi).addClass("brokerage-li");
-                                            $(newLi).attr('id', newUniqueId);
-                                            $(newLi).html(info + " x1");
-                                            console.log(dataBundle);
-                                            $(newLi).on("click", {
-                                                event: null,
-                                                contextMenu: this,
-                                                scene: scene,
-                                                item: dataBundle
-                                            }, popContextMenuDOM);                                    
-                                            $('#inventory').append(newLi);                                      
-                                            $(this).dialog("close");
-                                            $('#inventory-contextMenu--select-container').dialog("close");
-                                        },
-                                        Cancel: function () {
-                                            $(this).dialog("close");
-                                        }
+                            // Initial handshake => Backwards update for older avatars that were already instantiated
+                            socket.on('joinedClientId', function (data) {
+                                // cache id
+                                socketId = data.clientId;
+                                // Cache the game data
+                                gameData = data.gameData;
+                                // Init inventory (from database)
+                                // initInventory();            
+                                // Send older avatars
+                                // If the ids are differnt than this client id, load their model and last position
+                                for (let i = 0; i < data.olderAvatars.length; i++) {
+                                    if (data.olderAvatars[i].data.uniquePlayerId !== myUniquePlayerId) { // load
+                                        loadConfig.uniquePlayerId = data.olderAvatars[i].data.uniquePlayerId;
+                                        loadConfig.playerModel = data.olderAvatars[i].data.playerModel;
+                                        loadConfig.position = data.olderAvatars[i].data.position;
+                                        loadNewAvatar(PLAYER_PATH, loadConfig);
                                     }
-                                };
-                                let dialogConfig = {
-                                    autoOpen: false,
-                                    show: {
-                                        effect: "fade",
-                                        duration: 500
-                                    },
-                                    hide: {
-                                        effect: "fade",
-                                        duration: 250
-                                    },
-                                    resizable: true,
-                                    height: "auto",
-                                    width: 700,
-                                    modal: false,
-                                    title: info,
-                                    buttons: {
-                                        "Show sellers": function () {
-                                            $('#inventory-contextMenu--select-container').html("");
-                                            // TODO make this from Narrative in the item data
-                                            if(!progression.tutorials.brokerageActions3) {
-                                                // Pop-up tutorial
-                                                $('#tutorial--container').html("");
-                                                let p = $("<p>");
-                                                let tutorialText = "I bet you're confused right now. It's not so bad: This menu will show you the current value of the item, its rarity, what people generally use it for, and most importantly, it will show you a list of sellers who might sell you the item. <strong>Click on any seller in the list and choose to purchase one wood </strong> to continue.";
-                                                p.append(tutorialText);
-                                                $('#tutorial--container').html(tutorialText);
-                                                $('#tutorial--container').dialog({ position: { my: "center top", at: "center top", of: window }});
-                                                progression.tutorials.brokerageActions3 = true;
-                                            }
-                
-                                            let header = "Resource: " + info + "<br>" + "Value (AI Stock Value): " + item.value + " gold" + "<br>" + "Current Rarity: <span style=\"color: gold;\">Precious</span>" + "<br>" + "Used For: <em>\"You can't eat it, but maybe it can spark a nice fire. God only knows what awaits us in the dark.\"- The Friendly Anonymous Explorer</em>" + "<br>" + "<h1>Sellers:</h1><br>";
-                                            let ul = $("<ul>");
-                                            $('#inventory-contextMenu--select-container').append(header);
-                                            for (let i = 0; i < item.sellerIds.length; i++) {
-                                                if (item.sellerIds[i] === undefined) continue;
-                                                let li = $("<li>");
-                                                $(li).on("click", function () {
-                                                    // Emit on buy request to server
-                                                    $('#inventory-contextMenu--buy-container').html("You are about to purchase an item from another player.");
-                                                    $('#inventory-contextMenu--buy-container').data("sellerId", item.sellerIds[i]).dialog(confirmDialogConfig);
-                                                });
-                                                $(li).html("Seller: " + item.sellerIds[i] + "<br>");
-                                                $(ul).append(li);
-                                            }
-                                            $('#inventory-contextMenu--select-container').append(ul);
-                                        },
-                                        Cancel: function () {
-                                            $(this).dialog("close");
-                                        }
-                                    }
-                                } // Dialog config
-                                $('#inventory-contextMenu--select-container').dialog(dialogConfig);
-                                $('#inventory-contextMenu--select-container').dialog("open");
-                            }); // on click
-                            return dialogConfig;
-                        }
-                        socket.on('onBuyItem', function () {
-
-                        });
-                        socket.on('onSellItem', function () {
-                            // Emit sale
-                            // First validate if qty provided to sell matches actual inventory qty of that item
-
-                            // Also must emit requestRefreshBrokerage event after sale is complete
-                        });
-                        socket.on('onBuildItem', function () {
-
-                        });
-                        socket.on('chat message', function (msg) {
-                            $('#messages').append($('<li>').text(msg));
-                        });
-                        socket.on('newCycleBegin', function (data) {
-                            console.log("A new cycle of natural resources has begun.");
-                            console.log(data.resources.length + " rare resources have spawned in the world.");
-                            $('#messages').append($('<li>').text(data.message));
-                            // Instantiate them in the world
-                            let loader = new THREE.GLTFLoader();
-                            let resourceScene;
-                            //let PATH;
-                            loadNewResource(loader, resourceScene, TREE_PATH, data.resources);
-                        });
-                        socket.on('onPlayerDestroyedAResource', function(data){
-                            // Renew active SRI
-                            activeSRIs = data.activeSRI;
-                            // Destroy the activeSRI with the uuid
-                            destroyMeshByUUID(data.uuidDelete);
-                        });
-                    }); // On connect
-                    $('form').submit(function () {
-                        socket.emit('chat message', $('#chat-view-inputfield').val());
-                        $('#chat-view-inputfield').val('');
-                        return false;
-                    });
-                    // Events
-                    // Attach a once event on the action 
-                    $('#contextMenu--select-collect').on("click", function (event) {
-                        gatherResource();
-                    });
-                    $('#contextMenu--select-recruit').on("click", function (event) {
-                        recruitNewAdventurer();
-                    });
-                    $('#ui-button-inventory').on('click', function(event) {
-                        $('.brokerage-view-container').fadeToggle(300);
-                    });
-                    $('#ui-button-manufacture-list').on('click', function(event) {
-                        // Prepare the ui
-                        $('.ui-manufacture-panel').html("");
-                        let header = "<h2>Current production: </h2>";
-                        let ul = $("<ul>");
-                        $('.ui-manufacture-panel').append(header);
-                        for (let i = 0; i < manufacturingQueue.length; i++) {
-                            let li = $("<li>");
-                            $(li).on("click", function() {
-                                // More details about the production
-
-                            });
-                            $(li).html("<h4>Produce: " + "<h5>" + manufacturingQueue[i].produce + "</h5>" + "<h4>" + "Progress (%): " + "</h4>" + "<h5>" + manufacturingQueue[i].progress + "</h5>");
-                            $(ul).append(li);
-                        }
-                        $('.ui-manufacture-panel').append(ul);
-                        let dialogOptions = {
-                            title: "Solar Manufacturing Queue",
-                            autoOpen: true,
-                            show: {
-                                effect: "fade",
-                                duration: 250
-                            },
-                            hide: {
-                                effect: "fade",
-                                duration: 250
-                            },
-                            resizable: false,
-                            height: 800,
-                            width: 800,
-                            modal: false,
-                            buttons: {
-                                Refresh: function() {
-                                    $(this).dialog("close");
-                                },
-                                Cancel: function () {
-                                    $(this).dialog("close");
                                 }
-                            } 
-                        }
-                        $('.ui-manufacture-panel').dialog(dialogOptions);
-                    });
-                    update();
+                                // Create current brokerage
+                                // Refresh view
+                                // Cache brokerage
+                                $('#brokerage-list').html('');
+                                brokerage = new Map(JSON.parse(gameData.brokerage));
+                                let content, newLi;
+                                brokerage.forEach((item, info) => {
+                                    content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
+                                    newLi = $('<li>');
+                                    updateBrokerageView(item, info, newLi);
+                                    $('#brokerage-list').append($(newLi).text(content));
+                                });
+                                // Create current active SRI                            
+                                let loader = new THREE.GLTFLoader();
+                                let resourceScene;
+                                loadNewResource(loader, resourceScene, TREE_PATH, data.activeSRI);
+                                // Check progression for tutorial status
+                                if (!progression.tutorials.resourceCollectionActions) {
+                                    // Pop-up tutorial
+                                    $('#tutorial--container').html("");
+                                    let p = $("<p>");
+                                    let tutorialText = "<em>Welcome to the Lounge, <strong>brave Guild Master</strong>.<br><br>\"What? Who am I, you ask?<br><br>...They call me 'Old Man' around here, probably because I'm old. Very old. Just call me what you want, okay? Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br><strong>Find a tree</strong>, and choose <strong>'Collect'</strong> to continue.";
+                                    p.append(tutorialText);
+                                    $('#tutorial--container').html(tutorialText);
+                                    $('#tutorial--container').dialog({
+                                        position: {
+                                            my: "center top",
+                                            at: "center top",
+                                            of: window
+                                        }
+                                    });
+                                    progression.tutorials.resourceCollectionActions = true;
+                                }
+                            });
+                            //load others avatar
+                            socket.on('newAvatarInWorld', function (avatar) {
+                                const parsedAvatar = JSON.parse(avatar.data);
+                                // update load config
+                                loadConfig.uniquePlayerId = parsedAvatar.uniquePlayerId;
+                                loadConfig.playerModel = parsedAvatar.playerModel;
+                                loadConfig.position = parsedAvatar.position;
+                                // Clone the avatar first in an instance of THREE.Object3D
+                                loadNewAvatar(PLAYER_PATH, loadConfig);
+                                // Alert the others
+                                socket.emit('chat message', "A new player entered the game.");
+                            });
+                            // Update connected avatars on request
+                            socket.on('updatedConnectedAvatars', function (data) {
+                                // Search for any differences 
+                                // in the currently active scene models
+                                let uuidToDelete = data.disconnectedPlayerId;
+                                for (let i = 0; i < otherConnectedPlayers.length; i++) {
+                                    if (otherConnectedPlayers[i].uniquePlayerId === uuidToDelete) {
+                                        // console.log(otherConnectedPlayers[i].gltfRef.uuid);
+                                        // console.log("DELETING DISCONNECTED PLAYER");
+                                        for (let j = 0; j < scene.children.length; j++) {
+                                            // console.log("UUID " + scene.children[j].uuid);
+                                            if (scene.children[j].uuid === otherConnectedPlayers[i].gltfRef.uuid) {
+                                                let meshes = scene.children[j].children[0].children;
+                                                console.log(meshes);
+                                                for (let k = 0; k < meshes.length; k++) {
+                                                    meshes[k].geometry.dispose();
+                                                    meshes[k].material.dispose();
+                                                    scene.remove(meshes[k].parent.parent); // Mesh -> Group -> glTF scene object
+                                                    renderer.dispose();
+                                                }
+                                            }
+                                        }
+                                        otherConnectedPlayers.splice(i, 1);
+                                    }
+                                }
+                            });
+                            socket.on('emitToOtherPlayersChangedWorldPosition', function (data) {
+                                if (otherConnectedPlayers.length <= 0) {
+                                    return;
+                                }
+                                // Update other players if there are any
+                                // Search the model associated with that player ID
+                                for (let i = 0; i < otherConnectedPlayers.length; i++) {
+                                    if (otherConnectedPlayers[i].uniquePlayerId === data.myUniquePlayerId) {
+                                        // Append update new movementData packet, render() will handle the rest?
+                                        otherConnectedPlayers[i].movementData = data;
+                                    }
+                                }
+                                // Update all players' position
+                                for (let i = 0; i < otherConnectedPlayers.length; i++) {
+                                    let otherCurrentPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.positionGoalProgress.x, otherConnectedPlayers[i].movementData.positionGoalProgress.y, otherConnectedPlayers[i].movementData.positionGoalProgress.z);
+                                    let otherGoalPos = new THREE.Vector3(otherConnectedPlayers[i].movementData.desiredPositionGoal.x, otherConnectedPlayers[i].movementData.desiredPositionGoal.y, otherConnectedPlayers[i].movementData.desiredPositionGoal.z);
+                                    // Lerp towards the goal 
+                                    otherCurrentPos.lerp(otherGoalPos, 0.1);
+                                    // Update the model
+                                    let otherPlayerModel = otherConnectedPlayers[i].gltfRef;
+                                    // console.log(otherPlayerModel);
+                                    otherPlayerModel.position.set(otherCurrentPos.x, averageGroundHeight, otherCurrentPos.z);
+                                    playSound("#otherPlayerMove");
+                                }
+                            });
+                            // Error handling
+                            socket.on('connect_error', (error) => {
+                                console.log("connectionError");
+                                // TODO					
+                            });
+                            // When browser launches, fetch any room ids from host
+                            socket.emit("fetchGameId");
+                            // on new game created
+                            socket.on('fetchGameIdResponse', function (data) {
+                                console.log("Game room: " + data);
+                            });
+                            // GAME 
+                            //
+                            // DATA
+                            socket.on('getGameData', function (data) {
+
+                            });
+                            socket.on('onRefreshBrokerage', function (updatedBrokerage) {
+                                // Recreate a map for the brokerage
+                                brokerage = new Map(JSON.parse(updatedBrokerage));
+                                // Refresh view
+                                $('#brokerage-list').html('');
+                                let content, newLi;
+                                brokerage.forEach((item, info) => {
+                                    content = info + " : qty: x" + item.totalQty + " : value: " + item.value + " gold";
+                                    newLi = $('<li>');
+                                    updateBrokerageView(item, info, newLi);
+                                    $('#brokerage-list').append($(newLi).text(content));
+                                });
+                            });
+
+                            function updateBrokerageView(item, info, component) {
+                                let dialogConfig;
+                                $(component).addClass("brokerage-li");
+                                // Add greyed out look if no seller 
+                                if (item.sellerIds.length <= 0) {
+                                    $(component).addClass("brokerage--empty-listing");
+                                } else {
+                                    $(component).addClass("brokerage--with-listing");
+                                }
+                                $(component).on('click', function () {
+                                    $('#inventory-contextMenu--select-container').html("");
+                                    let confirmDialogConfig = {
+                                        autoOpen: true,
+                                        show: {
+                                            effect: "fade",
+                                            duration: 500
+                                        },
+                                        hide: {
+                                            effect: "fade",
+                                            duration: 250
+                                        },
+                                        resizable: true,
+                                        height: "auto",
+                                        width: 400,
+                                        modal: false,
+                                        title: "Confirm Purchase?",
+                                        buttons: {
+                                            "Confirm": function () {
+                                                let newUniqueId = THREE.MathUtils.generateUUID();
+                                                let dataBundle = {
+                                                    uniquePlayerId: myUniquePlayerId,
+                                                    name: info,
+                                                    info: {
+                                                        item: item,
+                                                        uniqueId: newUniqueId,
+                                                        qty: 1
+                                                    },
+                                                    metaData: {
+                                                        sellerId: $(this).data('sellerId'),
+                                                        timeStamp: Date.now()
+                                                    }
+                                                };
+                                                socket.emit('onBuyItem', dataBundle);
+                                                // Get item
+                                                console.log(item);
+                                                console.log(info);
+                                                let newLi = $("<li>");
+                                                $(newLi).addClass("brokerage-li");
+                                                $(newLi).attr('id', newUniqueId);
+                                                $(newLi).html(info + " x1");
+                                                console.log(dataBundle);
+                                                $(newLi).on("click", {
+                                                    event: null,
+                                                    contextMenu: this,
+                                                    scene: scene,
+                                                    item: dataBundle
+                                                }, popContextMenuDOM);
+                                                $('#inventory').append(newLi);
+                                                $(this).dialog("close");
+                                                $('#inventory-contextMenu--select-container').dialog("close");
+                                            },
+                                            Cancel: function () {
+                                                $(this).dialog("close");
+                                            }
+                                        }
+                                    };
+                                    let dialogConfig = {
+                                        autoOpen: false,
+                                        show: {
+                                            effect: "fade",
+                                            duration: 500
+                                        },
+                                        hide: {
+                                            effect: "fade",
+                                            duration: 250
+                                        },
+                                        resizable: true,
+                                        height: "auto",
+                                        width: 700,
+                                        modal: false,
+                                        title: info,
+                                        buttons: {
+                                            "Show sellers": function () {
+                                                $('#inventory-contextMenu--select-container').html("");
+                                                // TODO make this from Narrative in the item data
+                                                if (!progression.tutorials.brokerageActions3) {
+                                                    // Pop-up tutorial
+                                                    $('#tutorial--container').html("");
+                                                    let p = $("<p>");
+                                                    let tutorialText = "I bet you're confused right now. It's not so bad: This menu will show you the current value of the item, its rarity, what people generally use it for, and most importantly, it will show you a list of sellers who might sell you the item. <strong>Click on any seller in the list and choose to purchase one wood </strong> to continue.";
+                                                    p.append(tutorialText);
+                                                    $('#tutorial--container').html(tutorialText);
+                                                    $('#tutorial--container').dialog({
+                                                        position: {
+                                                            my: "center top",
+                                                            at: "center top",
+                                                            of: window
+                                                        }
+                                                    });
+                                                    progression.tutorials.brokerageActions3 = true;
+                                                }
+
+                                                let header = "Resource: " + info + "<br>" + "Value (AI Stock Value): " + item.value + " gold" + "<br>" + "Current Rarity: <span style=\"color: gold;\">Precious</span>" + "<br>" + "Used For: <em>\"You can't eat it, but maybe it can spark a nice fire. God only knows what awaits us in the dark.\"- The Friendly Anonymous Explorer</em>" + "<br>" + "<h1>Sellers:</h1><br>";
+                                                let ul = $("<ul>");
+                                                $('#inventory-contextMenu--select-container').append(header);
+                                                for (let i = 0; i < item.sellerIds.length; i++) {
+                                                    if (item.sellerIds[i] === undefined) continue;
+                                                    let li = $("<li>");
+                                                    $(li).on("click", function () {
+                                                        // Emit on buy request to server
+                                                        $('#inventory-contextMenu--buy-container').html("You are about to purchase an item from another player.");
+                                                        $('#inventory-contextMenu--buy-container').data("sellerId", item.sellerIds[i]).dialog(confirmDialogConfig);
+                                                    });
+                                                    $(li).html("Seller: " + item.sellerIds[i] + "<br>");
+                                                    $(ul).append(li);
+                                                }
+                                                $('#inventory-contextMenu--select-container').append(ul);
+                                            },
+                                            Cancel: function () {
+                                                $(this).dialog("close");
+                                            }
+                                        }
+                                    } // Dialog config
+                                    $('#inventory-contextMenu--select-container').dialog(dialogConfig);
+                                    $('#inventory-contextMenu--select-container').dialog("open");
+                                }); // on click
+                                return dialogConfig;
+                            }
+                            socket.on('onBuyItem', function () {
+
+                            });
+                            socket.on('onSellItem', function () {
+                                // Emit sale
+                                // First validate if qty provided to sell matches actual inventory qty of that item
+
+                                // Also must emit requestRefreshBrokerage event after sale is complete
+                            });
+                            socket.on('onBuildItem', function () {
+
+                            });
+                            socket.on('chat message', function (msg) {
+                                $('#messages').append($('<li>').text(msg));
+                            });
+                            socket.on('newCycleBegin', function (data) {
+                                console.log("A new cycle of natural resources has begun.");
+                                console.log(data.resources.length + " rare resources have spawned in the world.");
+                                $('#messages').append($('<li>').text(data.message));
+                                // Instantiate them in the world
+                                let loader = new THREE.GLTFLoader();
+                                let resourceScene;
+                                //let PATH;
+                                loadNewResource(loader, resourceScene, TREE_PATH, data.resources);
+                            });
+                            socket.on('onPlayerDestroyedAResource', function (data) {
+                                // Renew active SRI
+                                activeSRIs = data.activeSRI;
+                                // Destroy the activeSRI with the uuid
+                                destroyMeshByUUID(data.uuidDelete);
+                            });
+                        }); // On connect
+                        $('form').submit(function () {
+                            socket.emit('chat message', $('#chat-view-inputfield').val());
+                            $('#chat-view-inputfield').val('');
+                            return false;
+                        });
+                        // Events
+                        // Attach a once event on the action 
+                        $('#contextMenu--select-collect').on("click", function (event) {
+                            gatherResource();
+                        });
+                        $('#contextMenu--select-recruit').on("click", function (event) {
+                            recruitNewAdventurer();
+                        });
+                        $('#ui-button-inventory').on('click', function (event) {
+                            $('.brokerage-view-container').fadeToggle(300);
+                        });
+                        $('#ui-button-manufacture-list').on('click', function (event) {
+                            // Prepare the ui
+                            $('.ui-manufacture-panel').html("");
+                            let header = "<h2>Current production: </h2>";
+                            let ul = $("<ul>");
+                            $('.ui-manufacture-panel').append(header);
+                            for (let i = 0; i < manufacturingQueue.length; i++) {
+                                let li = $("<li>");
+                                $(li).on("click", function () {
+                                    // More details about the production
+
+                                });
+                                $(li).html("<h4>Produce: " + "<h5>" + manufacturingQueue[i].produce + "</h5>" + "<h4>" + "Progress (%): " + "</h4>" + "<h5>" + manufacturingQueue[i].progress + "</h5>");
+                                $(ul).append(li);
+                            }
+                            $('.ui-manufacture-panel').append(ul);
+                            let dialogOptions = {
+                                title: "Solar Manufacturing Queue",
+                                autoOpen: true,
+                                show: {
+                                    effect: "fade",
+                                    duration: 250
+                                },
+                                hide: {
+                                    effect: "fade",
+                                    duration: 250
+                                },
+                                resizable: false,
+                                height: 800,
+                                width: 800,
+                                modal: false,
+                                buttons: {
+                                    Refresh: function () {
+                                        $(this).dialog("close");
+                                    },
+                                    Cancel: function () {
+                                        $(this).dialog("close");
+                                    }
+                                }
+                            }
+                            $('.ui-manufacture-panel').dialog(dialogOptions);
+                        });
+                        update();
+                    }); // fireplace.load
                 }); // player.load                
             }); // terrain.load
         } // init
@@ -1255,8 +1281,8 @@ $(function () {
                 resourceScene.scale.set(newResource.scale, newResource.scale, newResource.scale);
                 resourceScene.position.set(newResource.position.x, newResource.position.y, newResource.position.z);
                 resourceScene.castShadow = true;
-                resourceScene.traverse ( ( o ) => {
-                    if ( o.isMesh ) {
+                resourceScene.traverse((o) => {
+                    if (o.isMesh) {
                         o.material.metalness = 0;
                         o.material.roughness = 100;
                     }
@@ -1358,9 +1384,9 @@ $(function () {
 
     function updateGameModelsCache(uuidToDelete) {
         let closedGameModels = pickHelper.getGameModels();
-        for(let _i = 0; _i < closedGameModels.length; _i++) {
-            if(closedGameModels[_i].parent.parent.uuid === uuidToDelete) {
-                let newGameModels = closedGameModels.filter(function(currentValue, index, arr){
+        for (let _i = 0; _i < closedGameModels.length; _i++) {
+            if (closedGameModels[_i].parent.parent.uuid === uuidToDelete) {
+                let newGameModels = closedGameModels.filter(function (currentValue, index, arr) {
                     return (arr[index].parent.parent.uuid !== uuidToDelete);
                 });
                 pickHelper.setGameModels(newGameModels);
@@ -1386,10 +1412,10 @@ $(function () {
         // update gameModels cache too
         updateGameModelsCache(uuidToDelete);
     }
-        
+
     function viewingPosCheck(checkPos, playerPosition) {
-         console.log(checkPos);
-         console.log(playerPosition);
+        console.log(checkPos);
+        console.log(playerPosition);
         let raycaster = new THREE.Raycaster();
         let dir = new THREE.Vector3().copy(playerPosition.sub(checkPos));
         console.log(dir);
@@ -1414,21 +1440,20 @@ $(function () {
     function createBonfire() {
         let bonfireModel;
         let bonfire = new THREE.GLTFLoader();
-        let bonfirePosition = playerModel.position;
         console.log("Creating campfire");
         bonfire.load(BONFIRE_PATH, function (gltf) {
             bonfireModel = gltf.scene;
             bonfireModel.scale.set(50, 50, 50);
-            bonfireModel.position.set(bonfirePosition.x, (bonfirePosition).add(new THREE.Vector3(0, 70, 0)).y, bonfirePosition.z);
+            bonfireModel.position.set(playerModel.x, 5, playerModel.z);
             bonfireModel.receiveShadow = false;
-            bonfireModel.traverse ( ( o ) => {
-                if ( o.isMesh ) {
+            bonfireModel.traverse((o) => {
+                if (o.isMesh) {
                     o.material.metalness = 0;
                     o.material.roughness = 0;
                     pickHelperGameModels.push(o);
                     pickHelper.addToGameModels(o);
                 }
-            } );
+            });
             bonfireModel.uuid = THREE.MathUtils.generateUUID();
             let bonfireBundle = {
                 type: bonfireModel.name,
@@ -1442,10 +1467,9 @@ $(function () {
             bonfireLight.decay = 2;
             bonfireLight.distance = 1000;
             bonfireLight.scale.set(50, 50, 50);
-            bonfireLight.position.set(bonfirePosition.x, bonfirePosition.y, bonfirePosition.z);
+            bonfireLight.position.set(playerModel.x, 5, playerModel.z);
             bonfireLight.castShadow = false;
             scene.add(bonfireLight);
-            bonfireLight.parent = bonfireModel;
         });
     }
 
@@ -1499,7 +1523,7 @@ $(function () {
 
     function setupMusicPlayer() {
         // PLAY MUSIC
-        let ambientMusic = $('#song18')[0];
+        let ambientMusic = $('#ObservingTheStar')[0];
         if (!ambientMusic.isPlaying) {
             ambientMusic.loop = true;
             ambientMusic.play();

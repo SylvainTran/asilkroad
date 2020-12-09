@@ -1,0 +1,10 @@
+Game:
+Live in a cabin in the wilderness, isolated
+must stoke fireplace up to trade with the network
+game is over if fire is out
+Every day go outside cabin and woodcut
+Network interactions allow progression in the game and communication with others
+Each player in a separate but joined cabin or all in same coop room only visually
+
+
+before you go was there anything
