@@ -29,16 +29,17 @@
 		<!-- <div class="public-explorable-container"> -->
 			<!--Text View -->
 			<main class="explorable-text-view">
-				<h1>The Silk Road Lounge</h1><hr width=75%><br>
-					<p>You enter the coop room. Welcome to the Silkroad Lounge, _____.</p>
-					<p>You hear the busy activity of co-managers nearby, going about their business.</p>
-					<p>Manage your guild merchants, business partners, and adventure crew here.</p>
+				<h1>The Silk Road Stop</h1><hr width=75%><br>
+					<p>Welcome to the Silk Road Stop, PLAYER_NAME.</p>
+					<p>You hear nothing but the stillness of silence. You are in a lonely forest in the wilderness.</p>
+					<p>House Upgrade Tier Attained: Level 1.</p>
+					<!-- <p>Manage your guild merchants, business partners, and adventure crew here.</p> -->
 				<h4 class="explorable-text-view--update"></h4>
 			</main>
 
 			<!-- Game World canvas used by Three.js -->
 			<div class="explorable-graphics-view">
-				<div class="ui--lantern-light-level">2000</div>
+				<div class="ui--lantern-light-level">Fireplace Strength: 499</div>
 				<div class="ui-buttons">
 					<button class="ui-button" id="ui-button-account">Account</button>
 					<button class="ui-button" id="ui-button-manufacture-list">Manufacturing List</button>
@@ -93,6 +94,7 @@
 	</div>
 	<!-- Tutorial pop-up -->
 	<div id="tutorial--container" title="Tutorial"></div>
+	<div id="warning--container" title="Warning">"Not enough fire. You need a minimum fireplace strength of 500 to continue."</div>
 	<!-- Inventory context menu -->
 	<div id="inventory-contextMenu--select-container" title="Inventory Context Menu"></div>
 	<!-- Confirm buy from seller dialog -->

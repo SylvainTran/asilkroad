@@ -21,6 +21,9 @@ $(function () {
             cameraControls: false,
             resourceCollectionActions: false,
             inventoryActions: false,
+            fireplacePowerDecay: false,
+            fireplacePowerSell: false,
+            fireplaceMilestone: false,
             brokerageActions: false,
             brokerageActions2: false,
             brokerageActions3: false,
@@ -35,11 +38,14 @@ $(function () {
         constructor(lanternLight) {
             // Private properties            
             this.lanternLight = lanternLight; // Physical lantern light
-            this.maxLanternLightPower = 2000;
+            this.maxLanternLightPower = 499; // For tutorial, 500 is threshold to buy/sell. Then max = 2000 as normal
         }
         // Public methods
-        getLanternLight() {
-            return this.lanternLight;
+        getLanternLightPower() {
+            return Math.floor(this.lanternLight.power);
+        }
+        setMaxLanternLightPower(value) {
+            this.maxLanternLightPower = value;
         }
         // Sets the player's lantern light values
         setPlayerLanternLightValues(power, decay, distance) {
@@ -48,6 +54,10 @@ $(function () {
             this.lanternLight.distance = distance;
         }
         updatePlayerLanternLightValues(delta) {
+            // Tutorial
+            if(!progression.tutorials.fireplacePowerDecay) {
+                return;
+            }
             this.lanternLight.power -= (1 / (1 - 0.5)) * delta * 10;
             this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
             // Update UI 
@@ -371,6 +381,43 @@ $(function () {
             modal: false,
             buttons: {
                 "Trade to Broker": function () {
+                    // Fireplace power condition Tutorial
+                    if (!progression.tutorials.fireplacePowerSell) {
+                        checkFireplacePower();
+                        // Pop-up tutorial
+                        $('#tutorial--container').html("");
+                        let p = $("<p>");
+                        let tutorialText = "Surprised? You will only be able to use the Network and sell or buy items from other players if there is enough light in your current house's fireplace. The only way to ensure that is to cut some firewood and stoke the fireplace. Try choosing 'Stoke Fireplace' instead, then chop another wood and try selling it to the brokerage again.";
+                        p.append(tutorialText);
+                        $('#tutorial--container').html(tutorialText);
+                        $('#tutorial--container').dialog({
+                            position: {
+                                my: "center top",
+                                at: "center top",
+                                of: window
+                            }
+                        });
+                    }
+                    if(!progression.tutorials.fireplaceMilestone && progression.tutorials.fireplacePowerSell && progression.tutorials.fireplacePowerDecay) {
+                        // Pop-up tutorial
+                        $('#tutorial--container').html("");
+                        let p = $("<p>");
+                        let tutorialText = "Well done. Remember, the same rule applies to buying items from other players.";
+                        p.append(tutorialText);
+                        $('#tutorial--container').html(tutorialText);
+                        $('#tutorial--container').dialog({
+                            position: {
+                                my: "center top",
+                                at: "center top",
+                                of: window
+                            }
+                        });
+                        progression.tutorials.fireplaceMilestone = true;
+                    }            
+                    // Check fireplace power to see if allow sale
+                    if(!checkFireplacePower()) {
+                        return;
+                    }
                     console.log(event.data.item);
                     removeFromInventory(event.data.item);
                     tradeToBroker(event.data.item);
@@ -382,6 +429,13 @@ $(function () {
                     $(this).dialog("close");
                 },
                 "Stoke Fireplace": function () {
+                    // Tutorial
+                    if(!progression.tutorials.fireplacePowerDecay) {
+                        player.setMaxLanternLightPower(2000); // Default value now that player finished the tutorial
+                        player.setPlayerLanternLightValues(2000, 1.5, 150);
+                        progression.tutorials.fireplacePowerDecay = true;
+                        progression.tutorials.fireplacePowerSell = true;
+                    }
                     player.playerFeedLanternLight(event.data.item);
                     removeFromInventory(event.data.item);
                     $(this).dialog("close");
@@ -413,7 +467,7 @@ $(function () {
         if (!progression.tutorials.brokerageActions2) {
             $('#tutorial--container').html("");
             let p = $("<p>");
-            let tutorialText = "Congratulations, you've just posted your first item on the brokerage. Now, let's try buying it back. Scroll down the list and find 'wood'. Click on it to trigger the buy menu.";
+            let tutorialText = "Congratulations, you've just posted your first item on the brokerage. Now, let's try buying it back. Click on the fireplace and scroll down the opened up brokerage list. Find 'wood'. Click on it to trigger the buy menu.";
             p.append(tutorialText);
             $('#tutorial--container').html(tutorialText);
             $('#tutorial--container').dialog({
@@ -855,7 +909,7 @@ $(function () {
                         // Add lantern light to player's cart 
                         // Light as a mechanic
                         lanternLight = new THREE.PointLight(0xFFFFFF, 0.5);
-                        lanternLight.power = 2000;
+                        lanternLight.power = 499; // Temporary default value. After tutorial, this is set to 2000
                         lanternLight.decay = 1.5;
                         lanternLight.distance = 150;
                         lanternLight.scale.set(1, 1, 1);
@@ -1087,6 +1141,10 @@ $(function () {
                                         title: "Confirm Purchase?",
                                         buttons: {
                                             "Confirm": function () {
+                                                // Check fireplace strength to see if can buy
+                                                if(!checkFireplacePower()) {
+                                                    return;
+                                                }
                                                 let newUniqueId = THREE.MathUtils.generateUUID();
                                                 let dataBundle = {
                                                     uniquePlayerId: myUniquePlayerId,
@@ -1484,6 +1542,16 @@ $(function () {
             bonfireLight.castShadow = false;
             scene.add(bonfireLight);
         });
+    }
+
+    function checkFireplacePower() {
+        const NETWORK_INTERACTION_MIN_THRESHOLD = 500;
+        console.log("CHECK BUY VAL" + player.getLanternLightPower());
+        if(player.getLanternLightPower() < NETWORK_INTERACTION_MIN_THRESHOLD) {
+            $('#warning--container').dialog();
+            return false;
+        } 
+        return true;
     }
 
     function smoothLookAt(playerModel) {

@@ -108,6 +108,10 @@ body {
     /* border: 1px solid silver; */
 }
 
+#warning--container {
+    z-index: 50;
+}
+
 .inventory-view-container:hover {
     opacity: 1;
 }
