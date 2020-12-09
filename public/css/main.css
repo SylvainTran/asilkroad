@@ -72,11 +72,25 @@ body {
     text-align: center;
 }
 
-.brokerage-view-container {
+.inventory-view-container {
     background-color: black;
     color: white;
     overflow: auto;
     display: grid;
+    width: 500px;
+    height: 700px;
+    position: fixed;
+    top: 0;
+    right: 300px;
+    border-radius: 2%;
+    opacity: 0.3;  
+}
+
+.brokerage-view-container {
+    background-color: black;
+    color: white;
+    overflow: auto;
+    display: none;
     width: 500px;
     height: 700px;
     position: fixed;
@@ -94,10 +108,11 @@ body {
     /* border: 1px solid silver; */
 }
 
+.inventory-view-container:hover {
+    opacity: 1;
+}
+
 .brokerage-view-container:hover {
-    display: grid;
-    grid-row: 1;
-    grid-column: 2;
     /* border: 1px solid silver; */
     opacity: 1;
     /* background-color: #11357e; */

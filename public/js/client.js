@@ -137,6 +137,9 @@ $(function () {
                         tag: objectTag
                     });
                 }
+                if (objectTag === 'fireplace') {
+                    $('.brokerage-view-container').fadeToggle();
+                }
             }
         }
     }
@@ -670,7 +673,16 @@ $(function () {
         // 3D view -- Three.js complete setup
         console.log("client js loaded");
         init();
-        // Draggable and resizable UI 
+        // Draggable and resizable UI -- break the frame!
+        $(".inventory-view-container").resizable({
+            start: function (event, ui) {
+                ui.element.draggable("disable");
+            },
+            stop: function (event, ui) {
+                ui.element.draggable("enable");
+            },
+            handles: "n, e, s, w"
+        });
         $(".brokerage-view-container").resizable({
             start: function (event, ui) {
                 ui.element.draggable("disable");
@@ -698,6 +710,7 @@ $(function () {
             },
             handles: "n, e, s, w"
         });
+        $(".inventory-view-container").draggable();
         $(".brokerage-view-container").draggable();
         $(".chat-view-container").draggable();
         $(".explorable-text-view").draggable();
@@ -1220,7 +1233,7 @@ $(function () {
                             recruitNewAdventurer();
                         });
                         $('#ui-button-inventory').on('click', function (event) {
-                            $('.brokerage-view-container').fadeToggle(300);
+                            $('.inventory-view-container').fadeToggle(300);
                         });
                         $('#ui-button-manufacture-list').on('click', function (event) {
                             // Prepare the ui
