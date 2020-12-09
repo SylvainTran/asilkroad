@@ -489,6 +489,7 @@ $(function () {
                     }
                     player.playerFeedLanternLight(event.data.item);
                     removeFromInventory(event.data.item);
+                    playSound('#foom_0');
                     $(this).dialog("close");
                 },
                 "Create campfire": function () {
@@ -608,6 +609,22 @@ $(function () {
                 }
             };
         }
+        // UX: Audio feedback
+        let soundFeedback;
+        switch(event.tag) {
+            case 'tree':
+                soundFeedback = "#cloth-inventory";
+                break;
+            case 'adventurerRecruitingTable':
+                soundFeedback = "#amulet-of-absorption";
+                break;
+            case 'manufacturingTable':
+                soundFeedback = "#amulet-of-absorption";
+                break;                    
+            default: 
+                break;
+        }
+        playSound(soundFeedback);
 
         $(contextMenu).contextmenu(contextMenuFill);
         // Attach a one time event to close it if clicked anywhere else
