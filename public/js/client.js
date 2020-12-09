@@ -1,5 +1,7 @@
 // Client code
 $(function () {
+    // Tell to move 
+    let allowPositionUpdate = false;
     // Game model meshes
     let gameModels = [];
     let activeSRIs = [];
@@ -91,6 +93,43 @@ $(function () {
         addToGameModels(mesh) {
             this.gameModels.push(mesh);
         }
+        checkInteractibles(normalizedPosition, camera, scene, event) {
+            if (this.pickedObject) {
+                if (this.pickedObject.material.emissive) {
+                    this.pickedObject.material.emissive.setHex(this.pickedObjectSavedColor);
+                    this.pickedObject = undefined;
+                }
+            }
+            // cast a ray through the frustum
+            this.raycaster.setFromCamera(normalizedPosition, camera);
+            // get the list of objects the ray intersected
+            const intersectedObjects = this.raycaster.intersectObjects(this.gameModels);
+
+            if (intersectedObjects.length) {
+                if (intersectedObjects[0].object === null) return;
+                let interactible = false;
+                this.pickedObject = intersectedObjects[0].object;
+                objectTag = this.pickedObject.userData['tag']; // Custom object mesh label used to know if it can be interacted with
+                if(objectTag.toLowerCase() === "floor" || objectTag.toLowerCase() === "terrain") {
+                    return;
+                }
+                objectTagResourceProperty = this.pickedObject.userData['resource'];
+                selectedObjUUID = this.pickedObject.parent.parent.uuid;
+                if(objectTag === "tree" || objectTag === "adventurerRecruitingTable" || objectTag === "fireplace" || objectTag === "manufacturingWorkbench" || objectTag === "flareflag" || objectTag === "courrierOps") {
+                    interactible = true;
+                    // UX: Text info
+                    $('.explorable-text-view--update').html('<h4><em>It is some ' + objectTag + '.</em></h4>');
+                }
+                // UX: Selectable Color flash
+                if (interactible && this.pickedObject.material) {
+                    if (this.pickedObject.material.emissive) {
+                        this.pickedObjectSavedColor = this.pickedObject.material.emissive.getHex();
+                        // set its emissive color to white
+                        this.pickedObject.material.emissive.setHex(0xFFFFFF);
+                    }
+                }
+            }
+        }
         pick(normalizedPosition, gameModels, camera, scene, event) {
             // restore the color if there is a picked object
             if (this.pickedObject) {
@@ -135,6 +174,8 @@ $(function () {
                 }
                 // Interactivity selector : Deal with objects according to their custom userData tag
                 if (walkable === 'true') {
+                    // Allow position change
+                    allowPositionUpdate = true;
                     // Pass in the point where the ray intersected with the mesh under the mouse cursor to get the move position
                     updatePosition(intersectedObjects[0].point);
                 }
@@ -200,6 +241,11 @@ $(function () {
     let terrainModel;
     // Average terrain ground height to place models (temporary)
     const averageGroundHeight = 1;
+    // INTERACTIBLES MODELS
+    let adventurerRecruitingTableModel;
+    let manufacturingTableModel;
+    let courrierOpsModel;
+    let flareflagModel;
 
     // CAMERA
     // Smooth factor
@@ -212,11 +258,15 @@ $(function () {
     let newPos;
 
     // Model paths
-    const MODEL_PATH = '/public/models/lounge_ops_all_export_0003.glb';
+    const MODEL_PATH = '/public/models/lounge_ops_all_export_0004.glb';
     const TREE_PATH = '/public/models/tree_low_0001_export.glb';
     const PLAYER_PATH = '/public/models/player_cart_0001_export.glb';
     const BONFIRE_PATH = '/public/models/bonfire_export_0003.glb';
     const FIREPLACE_PATH = '/public/models/fireplace_export_0002.glb';
+    const ADVENTURER_RECRUITING_TABLE_PATH = '/public/models/adventurerRecruitingTable_export_0001.glb';
+    const MANUFACTURING_TABLE_PATH = '/public/models/manufacturingTable_export_0001.glb';
+    const COURRIER_OPS_PATH = '/public/models/courrierOps_export_0001.glb';
+    const FLAREFLAG_PATH = '/public/models/flareflag_export_0001.glb';
 
     // Env. Props
 
@@ -233,8 +283,9 @@ $(function () {
         y: 0
     };
     const pickHelper = new PickHelper();
+    $('#graphics-view--canvas').on("mousemove", onCanvasMouseMove);
     // Attach click event on canvas only
-    $('#graphics-view--canvas').click(onCanvasMouseClick);
+    $('#graphics-view--canvas').on("click", onCanvasMouseClick);
     // Context menu event handlers
     $('#contextMenu--select-cancel').click(closeContextMenu);
     // Event handlers binding
@@ -870,7 +921,19 @@ $(function () {
             let terrain = new THREE.GLTFLoader();
             let playerCart = new THREE.GLTFLoader();
             let fireplaceLoader = new THREE.GLTFLoader();
+            let adventurerRecruitingTable = new THREE.GLTFLoader();
+            let manufacturingTable = new THREE.GLTFLoader();
+            let courrierOps = new THREE.GLTFLoader();
+            let flareflag = new THREE.GLTFLoader();
 
+            function interactibleGLTFAssetLoader(loader, path, model) {
+                loader.load(path, function (gltf) {
+                    model = gltf.scene;
+                    model.scale.set(1, 1, 1);
+                    model.castShadow = true;
+                    scene.add(model);
+                });
+            }
             // Terrain
             terrain.load(MODEL_PATH, function (gltf) {
                 terrainModel = gltf.scene;
@@ -899,6 +962,36 @@ $(function () {
                         }
                     });
                     scene.add(playerModel);
+
+                    //  INTERACTIBLES
+                    // Adventurer Recruiting Table
+                    adventurerRecruitingTable.load(ADVENTURER_RECRUITING_TABLE_PATH, function (gltf) {
+                        adventurerRecruitingTableModel = gltf.scene;
+                        adventurerRecruitingTableModel.scale.set(1, 1, 1);
+                        adventurerRecruitingTableModel.castShadow = true;
+                        scene.add(adventurerRecruitingTableModel);
+                    });
+                    // Manufacturing Table
+                    manufacturingTable.load(MANUFACTURING_TABLE_PATH, function (gltf) {
+                        manufacturingTableModel = gltf.scene;
+                        manufacturingTableModel.scale.set(1, 1, 1);
+                        manufacturingTableModel.castShadow = true;
+                        scene.add(manufacturingTableModel);
+                    });
+                    // Courrier OPS
+                    courrierOps.load(COURRIER_OPS_PATH, function (gltf) {
+                        courrierOpsModel = gltf.scene;
+                        courrierOpsModel.scale.set(1, 1, 1);
+                        courrierOpsModel.castShadow = true;
+                        scene.add(courrierOpsModel);
+                    });
+                    // Flareflag
+                    flareflag.load(FLAREFLAG_PATH, function (gltf) {
+                        flareflagModel = gltf.scene;
+                        flareflagModel.scale.set(1, 1, 1);
+                        flareflagModel.castShadow = true;
+                        scene.add(flareflagModel);
+                    });
                     // Fireplace
                     fireplaceLoader.load(FIREPLACE_PATH, function (gltf) {
                         fireplaceModel = gltf.scene;
@@ -1581,6 +1674,15 @@ $(function () {
         const pos = getCanvasRelativePosition(event);
         pickPosition.x = (pos.x / canvas.width) * 2 - 1;
         pickPosition.y = (pos.y / canvas.height) * -2 + 1; // note we flip Y
+        // Cache it to avoid too many calls
+        cachedMousePos = pos;
+    }
+
+    function onCanvasMouseMove(event) {
+        console.log("Changed mouse position");
+        // Raycast to display interactible things in the environment
+        setPickPosition(event);
+        pickHelper.checkInteractibles(pickPosition, camera, scene, event);
     }
 
     function onCanvasMouseClick(event) {
