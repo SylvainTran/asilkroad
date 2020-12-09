@@ -112,6 +112,27 @@ body {
     z-index: 50;
 }
 
+.company-rooster-view-container, #inventory-contextMenu--manufacture-container {
+    display: none;
+    background-color: black;
+    color: white;
+    overflow: auto;
+    display: none;
+    width: 500px;
+    height: 700px;
+    position: fixed;
+    top: 300px;
+    left: 700px;
+    border-radius: 2%;
+    opacity: 1;
+    z-index: 3;
+}
+
+#inventory-contextMenu--buy-container {
+    height: auto;
+    width: auto;
+}
+
 .inventory-view-container:hover {
     opacity: 1;
 }
@@ -206,7 +227,7 @@ hr.thick {
 
 .contextMenu--select-actions>div:hover,
 #brokerage-list li:hover,
-#inventory li:hover {
+#inventory li:hover, #inventory-contextMenu--manufacture-container li:hover {
     background-color: indianred;
     color: white;
     cursor: pointer;

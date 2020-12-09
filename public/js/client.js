@@ -16,7 +16,7 @@ $(function () {
     let player; // client player instance
     // Fireplace model
     let fireplaceModel;
-    // Actual progression
+    // Actual progression to be saved in localstorage or db
     let progression = {
         tutorials: {
             movementControls: false,
@@ -29,10 +29,31 @@ $(function () {
             brokerageActions: false,
             brokerageActions2: false,
             brokerageActions3: false,
+            adventurerActions1: false,
             events: false,
             goals: false,
             economy: false,
             otherPlayers: false
+        },
+        house: {
+            unlockedTier: 1,
+            mortgage: 0,
+            value: 1,
+        },
+        achievements: {
+            totalMoneyEarned: 1,
+            totalBrokerageTrades: 1,
+            totalPlayersSaved: 0,
+            fixedTrophiesEarned: 0,
+            randomTrophiesEarned: 0
+        },
+        skills: {
+            artisan: 1, // manufacturing skill
+            trader: 1,
+            gardener: 1,
+            lumberjack: 1,
+            fisherman: 1,
+            scientist: 1            
         }
     };
 
@@ -197,6 +218,12 @@ $(function () {
                 if (objectTag === 'fireplace') {
                     $('.brokerage-view-container').fadeToggle();
                 }
+                if (objectTag === 'manufacturingWorkbench') {
+                    // TODO
+                    // $('.manufacturing-workbench-container').fadeToggle();
+                    popManufactureMenuDOMFromInventory();
+                    // player.manufactureItem(event.data.item);
+                }
             }
         }
     }
@@ -317,7 +344,75 @@ $(function () {
         playSound("#playerMove");
         // TODO import three-pathfinding.js (stretch)  
     }
-
+    function popManufactureMenuDOMFromInventory() {
+        let confirmDialogConfig = {
+            autoOpen: true,
+            show: {
+                effect: "fade",
+                duration: 500
+            },
+            hide: {
+                effect: "fade",
+                duration: 250
+            },
+            resizable: true,
+            height: "auto",
+            width: 400,
+            modal: false,
+            title: "Confirm Manufacture?",
+            buttons: {
+                "Confirm": function () {
+                    // Match with produce that was passed in data                    
+                    // Pass this request about what to manufacture to the factory
+                    let newUniqueId = THREE.MathUtils.generateUUID();
+                    let dataBundle = {
+                        uniqueItemId: newUniqueId,
+                        produce: $(this).data("data").produce,
+                        progress: 0 // To be updated
+                    };
+                    socket.emit('onManufactureItem', dataBundle);
+                    // Send back list of something thats needed by server people?
+                    removeFromInventory($(this).data("data").item);
+                    // Update current manufactured items list cache
+                    manufacturingQueue.push(dataBundle);
+                    $(this).dialog("close");
+                    $('#warning--container').dialog("close");
+                    $('#inventory-contextMenu--manufacture-container').fadeToggle();
+                },
+                Cancel: function () {
+                    $(this).dialog("close");
+                    $('#warning--container').dialog("close");
+                }
+            }
+        };
+        $('#inventory-contextMenu--manufacture-container').html("");
+        $('#inventory-contextMenu--buy-container').html("");
+        $('#inventory-contextMenu--manufacture-container').fadeToggle();
+        let header = "Manufacturing Workbench";
+        let ul = $("<ul>");
+        $('#inventory-contextMenu--manufacture-container').append(header);
+        for(let i = 0; i < inventory.length; i++) {
+            let item = inventory[i];          
+            header += "<br>Resource: " + item.info.item.name + "<br>" + "Used For: <em>\"" + item.info.item.description + "\"</em>" + "<h1>Produces:</h1><br>";
+            for (let i = 0; i < item.info.item.produce.length; i++) {
+                let li = $("<li>");
+                $(li).addClass(".brokerage--with-listing");
+                $(li).on("click", function () {
+                    let data = {
+                        item: item,
+                        produce: item.info.item.produce[i]
+                    }
+                    $('#warning--container').html("You are about to manufacture this item. This will destroy the item.");
+                    $('#warning--container').dialog({position: { my: "center top", at: "center top", of: window } });
+                    $('#inventory-contextMenu--buy-container').data("data", data).dialog(confirmDialogConfig);
+                });
+                $(li).html(item.info.item.produce[i] + "<br>");
+                $(ul).append(li);
+            }
+            $('.explorable-text-view--update').html("You are manufacturing: " + item.info.item.name);
+        }
+        $('#inventory-contextMenu--manufacture-container').append(ul);
+    }
     function popManufactureMenuDOM(item) {
         let confirmDialogConfig = {
             autoOpen: true,
@@ -374,24 +469,24 @@ $(function () {
             width: 800,
             modal: false,
             buttons: {
-                "Choose Tier": function () {
+                "Show Manufacturing List": function () {
                     console.log(item);
-                    $('#inventory-contextMenu--manufacture-container').html("");
+                    $('#inventory-contextMenu--manufacture-queue').html("");
                     let header = "Resource: " + item.name + "<br>" + "Used For: <em>\"" + item.info.item.description + "\"</em>" + "<h1>Produces:</h1><br>";
                     let ul = $("<ul>");
-                    $('#inventory-contextMenu--manufacture-container').append(header);
+                    $('#inventory-contextMenu--manufacture-queue').append(header);
                     for (let i = 0; i < item.info.item.produce.length; i++) {
                         if (item.info.item.produce[i] === undefined) continue;
                         let li = $("<li>");
                         $(li).on("click", function () {
                             // Emit on buy request to server
-                            $('#inventory-contextMenu--manufacture-container').html("You are about to manufacture this item. This will destroy the item.");
-                            $('#inventory-contextMenu--manufacture-container').data("produce", item.info.item.produce[i]).dialog(confirmDialogConfig);
+                            $('#inventory-contextMenu--manufacture-queue').html("You are about to manufacture this item. This will destroy the item.");
+                            $('#inventory-contextMenu--manufacture-queue').data("produce", item.info.item.produce[i]).dialog(confirmDialogConfig);
                         });
                         $(li).html("Produce: " + item.info.item.produce[i] + "<br>");
                         $(ul).append(li);
                     }
-                    $('#inventory-contextMenu--manufacture-container').append(ul);
+                    $('#inventory-contextMenu--manufacture-queue').append(ul);
                     $('.explorable-text-view--update').html("You are manufacturing: " + item.name);
                 },
                 Cancel: function () {
@@ -399,9 +494,50 @@ $(function () {
                 }
             }
         };
-        $('#inventory-contextMenu--manufacture-container').dialog(dialogConfig);
-        $('#inventory-contextMenu--manufacture-container').dialog("open");
+        $('#inventory-contextMenu--manufacture-queue').dialog(dialogConfig);
+        $('#inventory-contextMenu--manufacture-queue').dialog("open");
     }
+    
+    // Update the currently listed manufacturing builds in the queue
+    function updateManufacturingQueueProgress() {
+        if(manufacturingQueue.length <= 0) {
+            return;
+        }
+        // Increment progress dependent on each adventurer hired in the Company Rooster's skill and match with the manufactured item
+        for(let i = 0; i < manufacturingQueue.length; i++) {
+            let progressToUpdate = manufacturingQueue[i].progress;
+            progressToUpdate += 50; // Temporary increment
+            manufacturingQueue[i].progress = THREE.MathUtils.clamp(progressToUpdate, 0, 100);
+            if(progressToUpdate >= 100) {
+                // Remove from queue and say its done
+                ++progression.skills.artisan; // Increment skill level
+                $("#warning--container").html("Manufacturing complete: " + manufacturingQueue[i].produce + "<br>" + "Artisan skill increased to: " + progression.skills.artisan);
+                $("#warning--container").dialog({position: {my: "center top", at: "center top", of: window}});
+                manufacturingQueue.splice(i, 1);
+            }
+        }
+    }
+
+    // Adventurer actions menu
+    function popAdventurerActionsMenu(event) {
+        if (!progression.tutorials.adventurerActions1) {
+            $('#tutorial--container').html("");
+            let p = $("<p>");
+            let tutorialText = "For the right fee, adventurers can be recruited in order to manufacture items for your company. Adventurers come with different skill levels, and items they can produce more successfully. Unlock higher house tiers to attract better skilled adventurers to your company rooster. For now, queue a manufacture from the workbench and then any hired adventurers in your Company Rooster will automatically boost your production values, depending on their skills and match with your manufactured items. [Future update] Then, choose them from the 'Company Rooster' button on the top left, and send them to work on the manufacture you started. Reminder: Click on the manufacturing list button on the top left to view the manufacture queue.";
+            p.append(tutorialText);
+            $('#tutorial--container').html(tutorialText);
+            $('#tutorial--container').dialog({
+                position: {
+                    my: "center top",
+                    at: "center top",
+                    of: window
+                }
+            });
+            progression.tutorials.adventurerActions1 = true;
+            console.log(event.data.adventurerSelected);
+        }
+    }
+
     // Pop the DOM context menu
     function popContextMenuDOM(event) {
         // Tutorial -- TODO UX, embed and play small video of gameplay tutorial
@@ -481,10 +617,6 @@ $(function () {
                     $('.explorable-text-view--update').html("You sent: " + event.data.item.name + " x" + event.data.item.info.qty + " to the brokerage.");
                     $(this).dialog("close");
                 },
-                "Manufacture": function () {
-                    player.manufactureItem(event.data.item);
-                    $(this).dialog("close");
-                },
                 "Stoke Fireplace": function () {
                     // Tutorial
                     if(!progression.tutorials.fireplacePowerDecay) {
@@ -497,15 +629,15 @@ $(function () {
                     removeFromInventory(event.data.item);
                     playSound('#foom_0');
                     $(this).dialog("close");
-                },
-                "Create campfire": function () {
-                    // instantiate a pre-designed campfire asset
-                    createBonfire();
-                    $(this).dialog("close");
-                },
-                Cancel: function () {
-                    $(this).dialog("close");
-                }
+                }// },
+                // "Create campfire": function () {
+                //     // instantiate a pre-designed campfire asset
+                //     createBonfire();
+                //     $(this).dialog("close");
+                // },
+                // Cancel: function () {
+                //     $(this).dialog("close");
+                // }
             }
         };
         $('#inventory-contextMenu--select-container').dialog(dialogConfig);
@@ -516,6 +648,11 @@ $(function () {
     // Removes traded item from inventory
     function removeFromInventory(item) {
         $('#' + item.info.uniqueId).remove();
+        for(let i = 0; i < inventory.length; i++) {
+            if(inventory[i].info.uniqueId === item.info.uniqueId) {
+                inventory.splice(i, 1);
+            }            
+        }
     }
     // tradeToBroker
     //
@@ -670,26 +807,31 @@ $(function () {
             buttons: {
                 // Show list of available server-generated adventurers + remote players?
                 "Show List": function () {
-                    let newUniqueId = THREE.MathUtils.generateUUID();
                     let dataBundle = {
                         uniquePlayerId: myUniquePlayerId,
+                        adventurerSelectedId: null, // Picked adventurer Id
+                        adventurerSelectedData: null, // Picked adventurer
                         metaData: {
                             timeStamp: Date.now()
                         }
                     };
+                    $('#ops--recruitment-menu-container').html("");
                     // Get last updated list of adventurers
                     for (let i = 0; i < gameData.labourResources.length; i++) {
+                        let newUniqueId = THREE.MathUtils.generateUUID();
                         let newLi = $("<li>");
                         $(newLi).addClass("brokerage-li");
                         $(newLi).attr('id', newUniqueId);
                         $(newLi).html(gameData.labourResources[i].name);
                         // console.log(dataBundle);
+                        dataBundle.adventurerSelectedId = newUniqueId;
+                        dataBundle.adventurerSelectedData = gameData.labourResources[i];
                         $(newLi).on("click", {
                             event: null,
                             contextMenu: this,
                             scene: scene,
-                            item: dataBundle
-                        }, popContextMenuDOM);
+                            adventurerSelected: dataBundle
+                        }, popAdventurerActionsMenu);
                         $('#ops--recruitment-menu-container').append(newLi);
                     }
                     // socket.emit('onRecruitAdventurer', dataBundle);
@@ -727,29 +869,21 @@ $(function () {
             });
             progression.tutorials.inventoryActions = true;
         }
-        console.log('collecting a resource');
-        // Check inventory space left
         if (inventory.length > inventoryMaxSize) {
-            // Instanciate in front of the model?
             $('.explorable-text-view--update').append('<h4><em>Inventory is full.</em></h4>');
             return;
         }
-        let resource;
-        let dataBundle;
-        console.log(objectTagResourceProperty);
+        let resource, metaData, dataBundle;
         for (let i = 0; i < gameData['rawResources'].length; i++) {
-            // TODO optimize this later
+            // TODO optimize this
             if (gameData['rawResources'][i]['name'] === objectTagResourceProperty) {
-                // Add to this player's inventory // Add a unique hash (SHA256) for this item instance
                 // TODO add player's own unique hashed ID from database (owner)
-                // let randomString = Math.random().toString(36).replace(/[^a-z]+/g, '');
                 resource = {
                     item: gameData['rawResources'][i],
                     uniqueId: THREE.MathUtils.generateUUID(),
-                    // uniqueId: new Hashes.SHA256().hex(randomString),
                     qty: 1
                 };
-                let metaData = {
+                metaData = {
                     sellerId: myUniquePlayerId,
                     timeStamp: Date.now() // ms
                 };
@@ -761,8 +895,8 @@ $(function () {
                 inventory.push(dataBundle);
             }
         }
-        console.log('Added a new resource to inventory.');
-        // Update view
+
+        // Update Signs and Feedback
         // sound:
         let soundFX = null;
         switch (objectTag) {
@@ -777,7 +911,7 @@ $(function () {
         }
         // inventory view: // each item img/icon/text will have a unique id from 1 to maxsize (24)
         // With an event listener on click to open a context menu / send to brokerage
-        console.log('Item with unique id: ' + resource.uniqueId);
+        // console.log('Item with unique id: ' + resource.uniqueId);
         let newLi = $("<li>");
         $(newLi).addClass("brokerage-li");
         $(newLi).attr('id', resource.uniqueId);
@@ -820,6 +954,24 @@ $(function () {
             },
             handles: "n, e, s, w"
         });
+        $(".company-rooster-view-container").resizable({
+            start: function (event, ui) {
+                ui.element.draggable("disable");
+            },
+            stop: function (event, ui) {
+                ui.element.draggable("enable");
+            },
+            handles: "n, e, s, w"
+        });
+        $("#inventory-contextMenu--manufacture-container").resizable({
+            start: function (event, ui) {
+                ui.element.draggable("disable");
+            },
+            stop: function (event, ui) {
+                ui.element.draggable("enable");
+            },
+            handles: "n, e, s, w"
+        });
         $(".explorable-text-view").resizable({
             start: function (event, ui) {
                 ui.element.draggable("disable");
@@ -840,6 +992,8 @@ $(function () {
         });
         $(".inventory-view-container").draggable();
         $(".brokerage-view-container").draggable();
+        $("#inventory-contextMenu--manufacture-container").draggable();
+        $(".company-rooster-view-container").draggable();
         $(".chat-view-container").draggable();
         $(".explorable-text-view").draggable();
 
@@ -1122,7 +1276,7 @@ $(function () {
                                     // Pop-up tutorial
                                     $('#tutorial--container').html("");
                                     let p = $("<p>");
-                                    let tutorialText = "<em>Welcome to the Lounge, <strong>brave Guild Master</strong>.<br><br>\"What? Who am I, you ask?<br><br>...They call me 'Old Man' around here, probably because I'm old. Very old. Just call me what you want, okay? Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br><strong>Find a tree</strong>, and choose <strong>'Collect'</strong> to continue.";
+                                    let tutorialText = "<em>Welcome to the Lounge, <strong>PLAYER_NAME</strong>.<br><br>\"What? Who am I, you ask?<br><br>...They call me 'Old Fart' around here, probably because I'm old. Dunno where the farting comes. Just call me what you want, okay? Now, let's get started.\"</em><br><br>Use the left mouse button to move the character around. Hold the mouse button to rotate the camera. Use the wheel to zoom. Play with these controls for a while, just have fun if that's possible.<br><br>\"<em>Done already? Now, go find yourself a tree and left click on it to open the action context menu.<br><br>Once you have clicked a tree, or any resource for the matter, a context menu will appear. Remember that, adventurer.\"</em><br><br><strong>Find a tree</strong>, and choose <strong>'Collect'</strong> to continue.";
                                     p.append(tutorialText);
                                     $('#tutorial--container').html(tutorialText);
                                     $('#tutorial--container').dialog({
@@ -1134,6 +1288,7 @@ $(function () {
                                     });
                                     progression.tutorials.resourceCollectionActions = true;
                                 }
+                                setInterval(updateManufacturingQueueProgress, 10000); // Update manufacturing queue every 10 seconds
                             });
                             //load others avatar
                             socket.on('newAvatarInWorld', function (avatar) {
@@ -1401,7 +1556,7 @@ $(function () {
                         // Events
                         // Attach a once event on the action 
                         $('#contextMenu--select-collect').on("click", function (event) {
-                            gatherResource();
+                            gatherResource(event);
                         });
                         $('#contextMenu--select-recruit').on("click", function (event) {
                             recruitNewAdventurer();
@@ -1409,24 +1564,13 @@ $(function () {
                         $('#ui-button-inventory').on('click', function (event) {
                             $('.inventory-view-container').fadeToggle(300);
                         });
+                        $('#ui-button-company-rooster').on('click', function (event) {
+                            $('.company-rooster-view-container').fadeToggle(300);
+                        });
                         $('#ui-button-manufacture-list').on('click', function (event) {
-                            // Prepare the ui
-                            $('.ui-manufacture-panel').html("");
-                            let header = "<h2>Current production: </h2>";
-                            let ul = $("<ul>");
-                            $('.ui-manufacture-panel').append(header);
-                            for (let i = 0; i < manufacturingQueue.length; i++) {
-                                let li = $("<li>");
-                                $(li).on("click", function () {
-                                    // More details about the production
-
-                                });
-                                $(li).html("<h4>Produce: " + "<h5>" + manufacturingQueue[i].produce + "</h5>" + "<h4>" + "Progress (%): " + "</h4>" + "<h5>" + manufacturingQueue[i].progress + "</h5>");
-                                $(ul).append(li);
-                            }
-                            $('.ui-manufacture-panel').append(ul);
+                            updateManufacturingQueueProgressView();
                             let dialogOptions = {
-                                title: "Solar Manufacturing Queue",
+                                title: "Company Manufacturing Queue",
                                 autoOpen: true,
                                 show: {
                                     effect: "fade",
@@ -1442,7 +1586,7 @@ $(function () {
                                 modal: false,
                                 buttons: {
                                     Refresh: function () {
-                                        $(this).dialog("close");
+                                        updateManufacturingQueueProgressView();
                                     },
                                     Cancel: function () {
                                         $(this).dialog("close");
@@ -1458,6 +1602,22 @@ $(function () {
         } // init
     } // Setup player
 
+    function updateManufacturingQueueProgressView() {
+        $('.ui-manufacture-panel').html("");
+        let header = "<h2>Current production: </h2>";
+        let ul = $("<ul>");
+        $('.ui-manufacture-panel').append(header);
+        for (let i = 0; i < manufacturingQueue.length; i++) {
+            let li = $("<li>");
+            $(li).on("click", function () {
+                // More details about the production
+
+            });
+            $(li).html("<h4>Produce: " + "<h5>" + manufacturingQueue[i].produce + "</h5>" + "<h4>" + "Progress (%): " + "</h4>" + "<h5>" + manufacturingQueue[i].progress + "</h5>");
+            $(ul).append(li);
+        }
+        $('.ui-manufacture-panel').append(ul);
+    }
     // factory for resources
     function loadNewResource(loader, resourceScene, PATH, loadConfig) {
         console.log(loadConfig);
@@ -1577,6 +1737,8 @@ $(function () {
                     return (arr[index].parent.parent.uuid !== uuidToDelete);
                 });
                 pickHelper.setGameModels(newGameModels);
+                // closedGameModels.splice(_i, 1);
+                // pickHelper.setGameModels(closedGameModels);
             }
         }
     }
@@ -1702,7 +1864,6 @@ $(function () {
     }
 
     function onCanvasMouseMove(event) {
-        console.log("Changed mouse position");
         // Raycast to display interactible things in the environment
         setPickPosition(event);
         pickHelper.checkInteractibles(pickPosition, camera, scene, event);

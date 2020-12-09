@@ -367,7 +367,7 @@ const RAW_RESOURCES = [{
         name: "wood",
         weight: 10,
         value: 15,
-        produce: ["wood_sculpture_t1_a", "lantern_table_t1_a"],
+        produce: ["Wood Sculpture: Beginner", "Seeds For Oaks: Beginner"],
         description: "You can't eat it, but maybe it can spark a nice fire. God only knows what awaits us in the dark. - The Friendly Anonymous Explorer"
     },
     {
