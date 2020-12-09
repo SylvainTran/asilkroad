@@ -178,6 +178,12 @@ $(function () {
                     allowPositionUpdate = true;
                     // Pass in the point where the ray intersected with the mesh under the mouse cursor to get the move position
                     updatePosition(intersectedObjects[0].point);
+                    // Adjust ground height if walking inside house
+                    if(objectTag.toLowerCase() === 'floor') {
+                        averageGroundHeight = 4;
+                    } else {
+                        averageGroundHeight = 1;
+                    }
                 }
                 if (objectTag === 'tree' || objectTag === 'adventurerRecruitingTable') {
                     // Open context menu -- the in-game version
@@ -240,7 +246,7 @@ $(function () {
     // Terrain model
     let terrainModel;
     // Average terrain ground height to place models (temporary)
-    const averageGroundHeight = 1;
+    let averageGroundHeight = 4;
     // INTERACTIBLES MODELS
     let adventurerRecruitingTableModel;
     let manufacturingTableModel;
