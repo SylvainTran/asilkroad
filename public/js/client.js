@@ -10,11 +10,15 @@ $(function () {
     let pickHelperGameModels = [];
     // LanterLight
     let lanternLight;
+    let territoryResourceBalanceLevel = 100;
+    let territoryHealthStatus = "PLENTIFUL"; // PLENTIFUL => Normal spawn, DISEASED => Lower spawn, DEAD => No spawn
     // clock for frame rates and also decreasing factors
     let clock = new THREE.Clock();
     let speed = 2;
     let delta = 0;
     let player; // client player instance
+    // Need warning from server if comatose (territory resource balance is 0)
+    let needWarning = false;
     // Fireplace model
     let fireplaceModel;
     // Actual progression to be saved in localstorage or db
@@ -310,6 +314,11 @@ $(function () {
     let renderer;
     const canvas = $('#graphics-view--canvas')[0];
     const canvasContainer = $('.explorable-graphics-view')[0];
+    // Handling lost context in WEBGL
+    // canvas.addEventListener("webglcontextlost", function(event){
+    //     event.preventDefault();
+    // }, false);
+    // canvas.addEventListener("webglcontextrestored", setupWebGLStateAndResources, false);
     const backgroundColor = 0x000000;
     // Pick helper
     const pickPosition = {
@@ -347,7 +356,13 @@ $(function () {
     }
 
     function popFlareFlagMenu() {
-
+        $('.flareflag-view-container').fadeToggle();
+        $('.flareflag-view-container').html("");
+        $('.flareflag-view-container').html("<h3>Connected Players Nearby: </h3>" + "<hr>");
+        for(let i = 0; i < otherConnectedPlayers.length; i++) {
+            console.log(otherConnectedPlayers[i]);
+            $('.flareflag-view-container').append("<br>" + "Player ID: " + otherConnectedPlayers[i].uniquePlayerId + "<br><hr>");
+        }
     }
 
     function popManufactureMenuDOMFromInventory() {
@@ -947,6 +962,33 @@ $(function () {
         objToDeleteUUID = selectedObjUUID;
         destroyResource(objToDeleteUUID);
         socket.emit('emitCollectedSRIResource', selectedObjUUID);
+        // Update territory resource balance level
+        const TERRITORY_RESOURCE_DECAY_FACTOR = 10; // Todo clever formula
+        territoryResourceBalanceLevel -= TERRITORY_RESOURCE_DECAY_FACTOR;
+        territoryResourceBalanceLevel = THREE.MathUtils.clamp(territoryResourceBalanceLevel, 0, 100);        
+        $('.ui--territory-resource-balance-level').html("");
+
+        // Update territory resource status which affects server spawn rate of resources like trees
+        if(territoryResourceBalanceLevel <= 0) {
+            // Tell server to stop spawning tree resources on the server until plant more or get flareflag help from other players
+            needWarning = true;
+            territoryHealthStatus = "<span style='color: red;'>COMATOSE</span>";
+        }
+        else if(territoryResourceBalanceLevel <= 25) {
+            needWarning = false;
+            territoryHealthStatus = "PRECARIOUS";
+        }
+        else if(territoryResourceBalanceLevel > 25 && territoryResourceBalanceLevel <= 50) {
+            territoryHealthStatus = "NORMAL";
+        }
+        else if(territoryResourceBalanceLevel > 50 && territoryResourceBalanceLevel <= 75) {
+            territoryHealthStatus = "PLENTIFUL";
+        }
+        else if(territoryResourceBalanceLevel > 75 && territoryResourceBalanceLevel <= 100) {
+            territoryHealthStatus = "<span style='color: green;'>ABUNDANT</span>";
+        }
+        $('.ui--territory-resource-balance-level').html("Territory Resource Balance " + territoryResourceBalanceLevel + "%" + "<br>" + "Status: " + territoryHealthStatus + "<br>");
+
         // Add eventlistener for the INVENTORY + BROKERAGE
         const contextMenu = $('#inventory-contextMenu--select-container');
         $('#' + resource.uniqueId).on("click", {
@@ -955,6 +997,11 @@ $(function () {
             scene: scene,
             item: dataBundle
         }, popContextMenuDOM);
+    }
+
+    // Lost context handler
+    function setupWebGLStateAndResources() {
+        setupPlayer();
     }
 
     function setupPlayer() {
@@ -1016,10 +1063,20 @@ $(function () {
             },
             handles: "n, e, s, w"
         });
+        $('.flareflag-view-container').resizable({
+            start: function (event, ui) {
+                ui.element.draggable("disable");
+            },
+            stop: function (event, ui) {
+                ui.element.draggable("enable");
+            },
+            handles: "n, e, s, w"
+        });
         $(".inventory-view-container").draggable();
         $(".brokerage-view-container").draggable();
         $("#inventory-contextMenu--manufacture-container").draggable();
         $(".company-rooster-view-container").draggable();
+        $('.flareflag-view-container').draggable();
         $(".chat-view-container").draggable();
         $(".explorable-text-view").draggable();
 
@@ -1342,7 +1399,6 @@ $(function () {
                                             // console.log("UUID " + scene.children[j].uuid);
                                             if (scene.children[j].uuid === otherConnectedPlayers[i].gltfRef.uuid) {
                                                 let meshes = scene.children[j].children[0].children;
-                                                console.log(meshes);
                                                 for (let k = 0; k < meshes.length; k++) {
                                                     meshes[k].geometry.dispose();
                                                     meshes[k].material.dispose();
@@ -1459,13 +1515,13 @@ $(function () {
                                                 };
                                                 socket.emit('onBuyItem', dataBundle);
                                                 // Get item
-                                                console.log(item);
-                                                console.log(info);
+                                                // console.log(item);
+                                                // console.log(info);
                                                 let newLi = $("<li>");
                                                 $(newLi).addClass("brokerage-li");
                                                 $(newLi).attr('id', newUniqueId);
                                                 $(newLi).html(info + " x1");
-                                                console.log(dataBundle);
+                                                // console.log(dataBundle);
                                                 $(newLi).on("click", {
                                                     event: null,
                                                     contextMenu: this,
@@ -1559,13 +1615,20 @@ $(function () {
                                 $('#messages').append($('<li>').text(msg));
                             });
                             socket.on('newCycleBegin', function (data) {
-                                console.log("A new cycle of natural resources has begun.");
-                                console.log(data.resources.length + " rare resources have spawned in the world.");
+                                // console.log("A new cycle of natural resources has begun.");
+                                // console.log(data.resources.length + " rare resources have spawned in the world.");
                                 $('#messages').append($('<li>').text(data.message));
+                                // No spawn if currently
+                                if(territoryResourceBalanceLevel <= 0 && needWarning) {
+                                    // Warn just once
+                                    needWarning = false;
+                                    $('#warning--container').html("Territory resource balance level reached 0. You must manufacture seeds to regrow resources or ask for other players' intervention via the flareflag object. Tip: Each new player henceforth who logs in will automatically impart their current resource spawn rate. This gives you the opportunity to plant new seeds or create new resource cultures in order to increase your territory resource balance levels.");
+                                    $('#warning--container').dialog();
+                                    return;
+                                }
                                 // Instantiate them in the world
                                 let loader = new THREE.GLTFLoader();
                                 let resourceScene;
-                                //let PATH;
                                 loadNewResource(loader, resourceScene, TREE_PATH, data.resources);
                             });
                             socket.on('onPlayerDestroyedAResource', function (data) {
@@ -1647,7 +1710,6 @@ $(function () {
     }
     // factory for resources
     function loadNewResource(loader, resourceScene, PATH, loadConfig) {
-        console.log(loadConfig);
         for (let i = 0; i < loadConfig.length; i++) {
             let newResource = loadConfig[i];
             loader.load(PATH, function (gltf) {
@@ -1778,10 +1840,10 @@ $(function () {
                 let meshes = scene.children[j].children[0].children;
                 // console.log(meshes);
                 for (let k = 0; k < meshes.length; k++) {
-                    meshes[k].geometry.dispose();
-                    meshes[k].material.dispose();
+                    // meshes[k].geometry.dispose();
+                    // meshes[k].material.dispose();
                     scene.remove(meshes[k].parent.parent); // Mesh -> Group -> glTF scene object
-                    renderer.dispose();
+                    // renderer.dispose();
                 }
             }
         }

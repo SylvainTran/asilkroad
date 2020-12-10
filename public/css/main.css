@@ -170,6 +170,16 @@ hr.thick {
     right: 0;
 }
 
+.ui--territory-resource-balance-level {
+    font-size: 1.5em;
+    padding: 2em;
+    display: inline-block;
+    z-index: 2;
+    position: fixed;
+    bottom: 100px;
+    right: 0;
+}
+
 #graphics-view--canvas {
     z-index: 0;
     margin: 0;
