@@ -609,7 +609,7 @@ $(function () {
                         // Pop-up tutorial
                         $('#tutorial--container').html("");
                         let p = $("<p>");
-                        let tutorialText = "Surprised? You will only be able to use the Network and sell or buy items from other players if there is enough light in your current house's fireplace. The only way to ensure that is to cut some firewood and stoke the fireplace. Try choosing 'Stoke Fireplace' instead, then chop another wood and try selling it to the brokerage again.";
+                        let tutorialText = "Surprised? You will only be able to use the Brokerage Network and sell or buy items from other players if there is enough light in your home's fireplace. The only way to ensure that is to cut some firewood and stoke the fireplace. Try choosing 'Stoke Fireplace' instead, then chop another wood and try selling it to the brokerage again.";
                         p.append(tutorialText);
                         $('#tutorial--container').html(tutorialText);
                         $('#tutorial--container').dialog({
@@ -1199,7 +1199,7 @@ $(function () {
                     fireplaceLoader.load(FIREPLACE_PATH, function (gltf) {
                         fireplaceModel = gltf.scene;
                         fireplaceModel.scale.set(1, 1, 1);
-                        fireplaceModel.position.set(0, averageGroundHeight, 0);
+                        fireplaceModel.position.set(0, averageGroundHeight - 4, 0);
                         fireplaceModel.castShadow = true;
                         scene.add(fireplaceModel);
                         // Add lantern light to player's cart 
@@ -1306,6 +1306,7 @@ $(function () {
                                     p.append(tutorialText);
                                     $('#tutorial--container').html(tutorialText);
                                     $('#tutorial--container').dialog({
+                                        width: 600,
                                         position: {
                                             my: "center top",
                                             at: "center top",
@@ -1492,7 +1493,7 @@ $(function () {
                                         },
                                         resizable: true,
                                         height: "auto",
-                                        width: 700,
+                                        width: 300,
                                         modal: false,
                                         title: info,
                                         buttons: {

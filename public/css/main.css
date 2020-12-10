@@ -94,8 +94,8 @@ body {
     width: 500px;
     height: 700px;
     position: fixed;
-    top: 0;
-    right: 0;
+    top: 300px;
+    right: 950px;
     border-radius: 2%;
     opacity: 0.3;
 }
