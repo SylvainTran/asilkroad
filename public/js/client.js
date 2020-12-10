@@ -59,6 +59,9 @@ $(function () {
             lumberjack: 1,
             fisherman: 1,
             scientist: 1            
+        },
+        character: {
+            money: 0 // Current money
         }
     };
 
@@ -386,7 +389,9 @@ $(function () {
                     // Match with produce that was passed in data                    
                     // Pass this request about what to manufacture to the factory
                     let newUniqueId = THREE.MathUtils.generateUUID();
+                    // console.log($(this).data("data"));
                     let dataBundle = {
+                        manufactureValue: $(this).data("data").item.info.item.value,
                         uniqueItemId: newUniqueId,
                         produce: $(this).data("data").produce,
                         progress: 0 // To be updated
@@ -409,7 +414,7 @@ $(function () {
         $('#inventory-contextMenu--manufacture-container').html("");
         $('#inventory-contextMenu--buy-container').html("");
         $('#inventory-contextMenu--manufacture-container').fadeToggle();
-        let header = "Manufacturing Workbench";
+        let header = "Manufacturing Workbench: (Requires at least one manufacturable item in the inventory.)";
         let ul = $("<ul>");
         $('#inventory-contextMenu--manufacture-container').append(header);
         for(let i = 0; i < inventory.length; i++) {
@@ -527,8 +532,8 @@ $(function () {
         // Increment progress dependent on each adventurer hired in the Company Rooster's skill and match with the manufactured item
         let totalProductionValue = 0;
         for(let i = 0; i < hiredAdventurers.length; i++) {
-            console.log(hiredAdventurers[i]);
-            console.log(hiredAdventurers[i].data.adventurerSelectedData.value);
+            // console.log(hiredAdventurers[i]);
+            // console.log(hiredAdventurers[i].data.adventurerSelectedData.value);
             totalProductionValue += parseInt(hiredAdventurers[i].data.adventurerSelectedData.value);
         }
         const FIXED_PRODUCTION_VALUE = 50;
@@ -538,13 +543,49 @@ $(function () {
             progressToUpdate += totalProductionValue; // TODO make something more definite
             manufacturingQueue[i].progress = THREE.MathUtils.clamp(progressToUpdate, 0, 100);
             if(progressToUpdate >= 100) {
+                // Give certain items back
+                addItemToInventory(manufacturingQueue[i]);
                 // Remove from queue and say its done
                 ++progression.skills.artisan; // Increment skill level
-                $("#warning--container").html("Manufacturing complete: " + manufacturingQueue[i].produce + "<br>" + "Artisan skill increased to: " + progression.skills.artisan);
+                $("#warning--container").html("Manufacturing complete: " + manufacturingQueue[i].produce + "<br>" + "Artisan skill increased to: " + progression.skills.artisan + "<br>" + "Gold Earned: " + manufacturingQueue[i].manufactureValue + "<br>");
                 $("#warning--container").dialog({position: {my: "center top", at: "center top", of: window}});
+                // Reward money according to manufacture value
+                // console.log(manufacturingQueue[i]);
+                progression.character.money += manufacturingQueue[i].manufactureValue;
+                $(".ui--gold-balance").html("Gold: " + progression.character.money);
                 manufacturingQueue.splice(i, 1);
             }
         }
+    }
+
+    function addItemToInventory(item) {
+        let newUniqueId = THREE.MathUtils.generateUUID();
+        let newLi = $("<li>");
+        $(newLi).addClass("brokerage-li");
+        $(newLi).attr('id', newUniqueId);
+        $(newLi).html(item.produce);
+        console.log(item);
+        let resource = {
+            item: item,
+            uniqueId: newUniqueId,
+            qty: 1
+        };
+        let metaData = {
+            sellerId: myUniquePlayerId,
+            timeStamp: Date.now() // ms
+        };
+        let dataBundle = {
+            name: item.produce,
+            info: resource,
+            metaData: metaData
+        };
+        $(newLi).on("click", {
+            event: null,
+            contextMenu: this,
+            scene: scene,
+            item: dataBundle
+        }, popContextMenuDOM);
+        $('#inventory').append(newLi);
     }
 
     // Adventurer actions menu
@@ -565,7 +606,16 @@ $(function () {
             progression.tutorials.adventurerActions1 = true;
         }
         let newAdventurer = event.data.adventurerSelected;
+        // Check price of adventurer if player has enough money and capacity in Company Rooster to hire
+        if(newAdventurer.adventurerSelectedData.value > progression.character.money) {
+            $('#warning--container').html("Not enough gold to hire. Manufacture items, complete quests, and trade on the brokerage to get gold.");
+            $('#warning--container').dialog();
+            return;
+        }
+        // Deduct adventurer price from player money
+        progression.character.money -= newAdventurer.adventurerSelectedData.value;
         hiredAdventurers.push({adventurerId: event.data.adventurerSelected.adventurerSelectedId, data: newAdventurer});
+        $('.ui--gold-balance').html("Gold: " + progression.character.money);
         $('#company-rooster-list').append("<br>" + "<hr>" + "Adventurer Name: " + "<br>");
         $('#company-rooster-list').append(newAdventurer.adventurerSelectedData.name + "<br>");
         $('#company-rooster-list').append("Production Value: " + "<br>");
@@ -673,7 +723,20 @@ $(function () {
                     removeFromInventory(event.data.item);
                     playSound('#foom_0');
                     $(this).dialog("close");
-                }// },
+                },
+                "Plant New Trees": function() {
+                    console.log(event.data);
+                    if((event.data.item.name !== "Seeds For Oaks: Beginner")) {
+                        return;
+                        // Restore some territory resource levels
+                    }
+                    territoryResourceBalanceLevel += 25; // Temporary value
+                    territoryResourceBalanceLevel = THREE.MathUtils.clamp(territoryResourceBalanceLevel, 0, 100);
+                    $('.ui--territory-resource-balance-level').html("");
+                    $('.ui--territory-resource-balance-level').html("Territory Resource Balance: " + territoryResourceBalanceLevel + "%");
+                    $(this).dialog("close");                    
+                }
+                // },
                 // "Create campfire": function () {
                 //     // instantiate a pre-designed campfire asset
                 //     createBonfire();
@@ -987,7 +1050,7 @@ $(function () {
         else if(territoryResourceBalanceLevel > 75 && territoryResourceBalanceLevel <= 100) {
             territoryHealthStatus = "<span style='color: green;'>ABUNDANT</span>";
         }
-        $('.ui--territory-resource-balance-level').html("Territory Resource Balance " + territoryResourceBalanceLevel + "%" + "<br>" + "Status: " + territoryHealthStatus + "<br>");
+        $('.ui--territory-resource-balance-level').html("Territory Resource Balance: " + territoryResourceBalanceLevel + "%" + "<br>" + "Status: " + territoryHealthStatus + "<br>");
 
         // Add eventlistener for the INVENTORY + BROKERAGE
         const contextMenu = $('#inventory-contextMenu--select-container');
@@ -1384,7 +1447,7 @@ $(function () {
                                 // Clone the avatar first in an instance of THREE.Object3D
                                 loadNewAvatar(PLAYER_PATH, loadConfig);
                                 // Alert the others
-                                socket.emit('chat message', "A new player entered the game.");
+                                socket.emit('chat message out', {id: myUniquePlayerId, msg: "A new player entered the game."});
                             });
                             // Update connected avatars on request
                             socket.on('updatedConnectedAvatars', function (data) {
@@ -1611,8 +1674,9 @@ $(function () {
                             socket.on('onBuildItem', function () {
 
                             });
-                            socket.on('chat message', function (msg) {
-                                $('#messages').append($('<li>').text(msg));
+                            socket.on('chat message in', function (data) {
+                                console.log(data);
+                                $('#messages').append($('<li>').text(data.id + ": " + data.msg));
                             });
                             socket.on('newCycleBegin', function (data) {
                                 // console.log("A new cycle of natural resources has begun.");
@@ -1639,7 +1703,7 @@ $(function () {
                             });
                         }); // On connect
                         $('form').submit(function () {
-                            socket.emit('chat message', $('#chat-view-inputfield').val());
+                            socket.emit('chat message out', {id: myUniquePlayerId, msg: $('#chat-view-inputfield').val()});
                             $('#chat-view-inputfield').val('');
                             return false;
                         });

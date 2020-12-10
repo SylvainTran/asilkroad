@@ -180,6 +180,16 @@ hr.thick {
     right: 0;
 }
 
+.ui--gold-balance {
+    font-size: 1.5em;
+    padding: 2em;
+    display: inline-block;
+    z-index: 2;
+    position: fixed;
+    bottom: 200px;
+    right: 0;
+}
+
 #graphics-view--canvas {
     z-index: 0;
     margin: 0;
@@ -279,7 +289,7 @@ hr.thick {
 
 .chat-view-container {
     background-color: black;
-    height: 160px;
+    height: 200px;
     grid-area: 2/1/2/2;
     overflow: auto;
     position: fixed;
@@ -291,6 +301,7 @@ hr.thick {
     color: white;
     font-size: 1.5em;
     font-weight: bolder;
+    width: 894px;
 }
 
 .chat-view-header {
@@ -302,14 +313,11 @@ hr.thick {
     background-color: black;
 }
 
-#chat-view-input {
-    position: relative;
-    top: -340px;
-    width: 1200px;
-}
-
 #chat-view-inputfield {
-    width: 1130px;
+    position: relative;
+    height: 50px;
+    bottom: 0; 
+    width: 800px;
 }
 
 .public-global-container {
@@ -341,12 +349,10 @@ hr.thick {
     color: white;
 }
 
-form>input {
-    height: 40px;
-    width: 90.5%;
+form > input {
     padding-left: 0.5%;
     padding-right: 0.5%;
-    background-color: grey;
+    background-color: black;
     color: white;
     font-size: 1.4em;
 }

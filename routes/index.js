@@ -890,9 +890,9 @@ Server.bindHostEvents = function (socket) {
         socket.emit('fetchGameIdResponse', gameData['gameId']);
     });
     // Attach a listener to that socket client, so when a connected socket emits a chat message event, they the server will emit the event + the msg
-    socket.on('chat message', function (msg) {
+    socket.on('chat message out', function (data) {
         console.log('a user sent a message');
-        Server.GameEventsEmitter.emit("chat message", msg);
+        Server.GameEventsEmitter.emit("chat message in", data);
     });
     // New cycle event
     socket.on('newCycleBegin', function (msg) {
