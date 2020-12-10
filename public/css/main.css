@@ -112,7 +112,7 @@ body {
     z-index: 50;
 }
 
-.company-rooster-view-container, #inventory-contextMenu--manufacture-container {
+.company-rooster-view-container, #inventory-contextMenu--manufacture-container, .flareflag-view-container {
     display: none;
     background-color: black;
     color: white;
@@ -227,7 +227,7 @@ hr.thick {
 
 .contextMenu--select-actions>div:hover,
 #brokerage-list li:hover,
-#inventory li:hover, #inventory-contextMenu--manufacture-container li:hover {
+#inventory li:hover, #inventory-contextMenu--manufacture-container li:hover, #ops--recruitment-menu-container li:hover {
     background-color: indianred;
     color: white;
     cursor: pointer;

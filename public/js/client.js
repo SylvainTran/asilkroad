@@ -6,6 +6,7 @@ $(function () {
     let gameModels = [];
     let activeSRIs = [];
     let manufacturingQueue = []; // Currently manufactured objects
+    let hiredAdventurers = []; // Company Rooster hired adventurers
     let pickHelperGameModels = [];
     // LanterLight
     let lanternLight;
@@ -219,10 +220,10 @@ $(function () {
                     $('.brokerage-view-container').fadeToggle();
                 }
                 if (objectTag === 'manufacturingWorkbench') {
-                    // TODO
-                    // $('.manufacturing-workbench-container').fadeToggle();
                     popManufactureMenuDOMFromInventory();
-                    // player.manufactureItem(event.data.item);
+                }
+                if (objectTag === 'flareflag') {
+                    popFlareFlagMenu();
                 }
             }
         }
@@ -344,6 +345,11 @@ $(function () {
         playSound("#playerMove");
         // TODO import three-pathfinding.js (stretch)  
     }
+
+    function popFlareFlagMenu() {
+
+    }
+
     function popManufactureMenuDOMFromInventory() {
         let confirmDialogConfig = {
             autoOpen: true,
@@ -504,9 +510,17 @@ $(function () {
             return;
         }
         // Increment progress dependent on each adventurer hired in the Company Rooster's skill and match with the manufactured item
+        let totalProductionValue = 0;
+        for(let i = 0; i < hiredAdventurers.length; i++) {
+            console.log(hiredAdventurers[i]);
+            console.log(hiredAdventurers[i].data.adventurerSelectedData.value);
+            totalProductionValue += parseInt(hiredAdventurers[i].data.adventurerSelectedData.value);
+        }
+        const FIXED_PRODUCTION_VALUE = 50;
+        totalProductionValue += FIXED_PRODUCTION_VALUE;
         for(let i = 0; i < manufacturingQueue.length; i++) {
             let progressToUpdate = manufacturingQueue[i].progress;
-            progressToUpdate += 50; // Temporary increment
+            progressToUpdate += totalProductionValue; // TODO make something more definite
             manufacturingQueue[i].progress = THREE.MathUtils.clamp(progressToUpdate, 0, 100);
             if(progressToUpdate >= 100) {
                 // Remove from queue and say its done
@@ -534,8 +548,23 @@ $(function () {
                 }
             });
             progression.tutorials.adventurerActions1 = true;
-            console.log(event.data.adventurerSelected);
         }
+        let newAdventurer = event.data.adventurerSelected;
+        hiredAdventurers.push({adventurerId: event.data.adventurerSelected.adventurerSelectedId, data: newAdventurer});
+        $('#company-rooster-list').append("<br>" + "<hr>" + "Adventurer Name: " + "<br>");
+        $('#company-rooster-list').append(newAdventurer.adventurerSelectedData.name + "<br>");
+        $('#company-rooster-list').append("Production Value: " + "<br>");
+        $('#company-rooster-list').append(newAdventurer.adventurerSelectedData.value + "<br>");
+        $('#company-rooster-list').append("Health: " + "<br>");        
+        $('#company-rooster-list').append(newAdventurer.adventurerSelectedData.health + "<br>");        
+        $('#company-rooster-list').append("Lifespan: " + "<br>");        
+        $('#company-rooster-list').append(newAdventurer.adventurerSelectedData.lifespan + "<br>");
+        $('#company-rooster-list').append("Producer: " + "<br>");        
+        $('#company-rooster-list').append(newAdventurer.adventurerSelectedData.produce + "<br>");
+        $('#company-rooster-list').append("Type: " + "<br>");        
+        $('#company-rooster-list').append(newAdventurer.adventurerSelectedData.type + "<br>");                
+        $('#ops--recruitment-menu-container').dialog("close");
+
     }
 
     // Pop the DOM context menu
@@ -807,14 +836,6 @@ $(function () {
             buttons: {
                 // Show list of available server-generated adventurers + remote players?
                 "Show List": function () {
-                    let dataBundle = {
-                        uniquePlayerId: myUniquePlayerId,
-                        adventurerSelectedId: null, // Picked adventurer Id
-                        adventurerSelectedData: null, // Picked adventurer
-                        metaData: {
-                            timeStamp: Date.now()
-                        }
-                    };
                     $('#ops--recruitment-menu-container').html("");
                     // Get last updated list of adventurers
                     for (let i = 0; i < gameData.labourResources.length; i++) {
@@ -823,9 +844,14 @@ $(function () {
                         $(newLi).addClass("brokerage-li");
                         $(newLi).attr('id', newUniqueId);
                         $(newLi).html(gameData.labourResources[i].name);
-                        // console.log(dataBundle);
-                        dataBundle.adventurerSelectedId = newUniqueId;
-                        dataBundle.adventurerSelectedData = gameData.labourResources[i];
+                        let dataBundle = {
+                            uniquePlayerId: myUniquePlayerId,
+                            adventurerSelectedId: newUniqueId, // Picked adventurer Id
+                            adventurerSelectedData: gameData.labourResources[i], // Picked adventurer
+                            metaData: {
+                                timeStamp: Date.now()
+                            }
+                        };
                         $(newLi).on("click", {
                             event: null,
                             contextMenu: this,
