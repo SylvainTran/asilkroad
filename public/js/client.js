@@ -725,8 +725,9 @@ $(function () {
                     $(this).dialog("close");
                 },
                 "Plant New Trees": function() {
-                    console.log(event.data);
                     if((event.data.item.name !== "Seeds For Oaks: Beginner")) {
+                        $("#warning--container").html("Only available for 'Seeds for Oaks: Beginner.'");
+                        $("#warning--container").dialog();
                         return;
                         // Restore some territory resource levels
                     }
@@ -734,6 +735,8 @@ $(function () {
                     territoryResourceBalanceLevel = THREE.MathUtils.clamp(territoryResourceBalanceLevel, 0, 100);
                     $('.ui--territory-resource-balance-level').html("");
                     $('.ui--territory-resource-balance-level').html("Territory Resource Balance: " + territoryResourceBalanceLevel + "%");
+                    // Remove from inventory
+                    removeFromInventory(event.data.item);
                     $(this).dialog("close");                    
                 }
                 // },
