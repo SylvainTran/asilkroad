@@ -363,7 +363,7 @@ $(function () {
         $('.flareflag-view-container').html("");
         $('.flareflag-view-container').html("<h3>Connected Players Nearby: </h3>" + "<hr>");
         for(let i = 0; i < otherConnectedPlayers.length; i++) {
-            console.log(otherConnectedPlayers[i]);
+            // console.log(otherConnectedPlayers[i]);
             $('.flareflag-view-container').append("<br>" + "Player ID: " + otherConnectedPlayers[i].uniquePlayerId + "<br><hr>");
         }
     }
@@ -460,7 +460,7 @@ $(function () {
                     // Match with produce that was passed in data                    
                     let produce = $(this).data('produce'); // a string
                     // Pass this request about what to manufacture to the factory
-                    console.log(item);
+                    // console.log(item);
                     let dataBundle = {
                         uniqueItemId: item.info.uniqueId,
                         name: item.name,
@@ -496,7 +496,7 @@ $(function () {
             modal: false,
             buttons: {
                 "Show Manufacturing List": function () {
-                    console.log(item);
+                    // console.log(item);
                     $('#inventory-contextMenu--manufacture-queue').html("");
                     let header = "Resource: " + item.name + "<br>" + "Used For: <em>\"" + item.info.item.description + "\"</em>" + "<h1>Produces:</h1><br>";
                     let ul = $("<ul>");
@@ -705,7 +705,7 @@ $(function () {
                     if(!checkFireplacePower()) {
                         return;
                     }
-                    console.log(event.data.item);
+                    // console.log(event.data.item);
                     removeFromInventory(event.data.item);
                     tradeToBroker(event.data.item);
                     $('.explorable-text-view--update').html("You sent: " + event.data.item.name + " x" + event.data.item.info.qty + " to the brokerage.");
@@ -1270,6 +1270,9 @@ $(function () {
                     if (o.isMesh) {
                         o.material.metalness = 0;
                         o.material.roughness = 100;
+                        o.userData['tag'] = "terrain";
+                        o.userData['walkable'] = "true";
+                        pickHelper.addToGameModels(o);                        
                     }
                 });
                 scene.add(terrainModel);
@@ -1285,6 +1288,7 @@ $(function () {
                         if (o.isMesh) {
                             o.material.metalness = 0;
                             o.material.roughness = 100;
+                            pickHelper.addToGameModels(o);                            
                         }
                     });
                     scene.add(playerModel);
@@ -1295,6 +1299,12 @@ $(function () {
                         adventurerRecruitingTableModel = gltf.scene;
                         adventurerRecruitingTableModel.scale.set(1, 1, 1);
                         adventurerRecruitingTableModel.castShadow = true;
+                        adventurerRecruitingTableModel.traverse((o) => {
+                            if (o.isMesh) {
+                                o.userData['tag'] = "adventurerRecruitingTable";
+                                pickHelper.addToGameModels(o);
+                            }
+                        });
                         scene.add(adventurerRecruitingTableModel);
                     });
                     // Manufacturing Table
@@ -1302,6 +1312,12 @@ $(function () {
                         manufacturingTableModel = gltf.scene;
                         manufacturingTableModel.scale.set(1, 1, 1);
                         manufacturingTableModel.castShadow = true;
+                        manufacturingTableModel.traverse((o) => {
+                            if (o.isMesh) {
+                                o.userData['tag'] = "manufacturingWorkbench";
+                                pickHelper.addToGameModels(o);
+                            }
+                        });
                         scene.add(manufacturingTableModel);
                     });
                     // Courrier OPS
@@ -1309,6 +1325,12 @@ $(function () {
                         courrierOpsModel = gltf.scene;
                         courrierOpsModel.scale.set(1, 1, 1);
                         courrierOpsModel.castShadow = true;
+                        courrierOpsModel.traverse((o) => {
+                            if (o.isMesh) {
+                                o.userData['tag'] = "courrierOps";
+                                pickHelper.addToGameModels(o);                                
+                            }
+                        });
                         scene.add(courrierOpsModel);
                     });
                     // Flareflag
@@ -1316,6 +1338,12 @@ $(function () {
                         flareflagModel = gltf.scene;
                         flareflagModel.scale.set(1, 1, 1);
                         flareflagModel.castShadow = true;
+                        flareflagModel.traverse((o) => {
+                            if (o.isMesh) {
+                                o.userData['tag'] = "flareflag";
+                                pickHelper.addToGameModels(o);
+                            }
+                        });
                         scene.add(flareflagModel);
                     });
                     // Fireplace
@@ -1324,6 +1352,12 @@ $(function () {
                         fireplaceModel.scale.set(1, 1, 1);
                         fireplaceModel.position.set(0, averageGroundHeight - 4, 0);
                         fireplaceModel.castShadow = true;
+                        fireplaceModel.traverse((o) => {
+                            if (o.isMesh) {
+                                o.userData['tag'] = "fireplace";
+                                pickHelper.addToGameModels(o);
+                            }
+                        });
                         scene.add(fireplaceModel);
                         // Add lantern light to player's cart 
                         // Light as a mechanic
@@ -1349,12 +1383,12 @@ $(function () {
                         relCameraPosMag = camera.position.distanceTo(playerModel.position) - 0.5;
                         // Everything has been loaded at this point
                         // Add scene meshes to raycasting cache
-                        scene.traverse(function (child) {
-                            if (child instanceof THREE.Mesh) {
-                                pickHelperGameModels.push(child);
-                            }
-                        });
-                        pickHelper.setGameModels(pickHelperGameModels);
+                        // scene.traverse(function (child) {
+                        //     if (child instanceof THREE.Mesh) {
+                        //         pickHelperGameModels.push(child);
+                        //     }
+                        // });
+                        // pickHelper.setGameModels(pickHelperGameModels);
                         // SERVER CODE
                         //
                         // Client-side network controller
@@ -1678,7 +1712,7 @@ $(function () {
 
                             });
                             socket.on('chat message in', function (data) {
-                                console.log(data);
+                                // console.log(data);
                                 $('#messages').append($('<li>').text(data.id + ": " + data.msg));
                             });
                             socket.on('newCycleBegin', function (data) {
