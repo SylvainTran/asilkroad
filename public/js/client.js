@@ -97,6 +97,9 @@ $(function () {
         playerFeedLanternLight(item) {
             // console.log(item);
             let feedAmount = item.info.item.value; // TODO set this up by item type
+            if(!feedAmount || feedAmount === NaN) {
+                feedAmount = 1500; // Default value
+            }
             this.lanternLight.power += feedAmount * 100;
             this.lanternLight.power = THREE.MathUtils.clamp(this.lanternLight.power, 0, this.maxLanternLightPower);
         }
